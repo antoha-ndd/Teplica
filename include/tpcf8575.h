@@ -68,18 +68,54 @@ public:
     void (*OnRelease)(TPCF8575_Button *Button){EmptyTPCF8575ButtonEvent};
     void (*OnClick)(TPCF8575_Button *Button){EmptyTPCF8575ButtonEvent};
     
+    int GetPin(){
+        return Pin;
+    }
 
-    void Idle();
+    void Idle()
+    {
+        unsigned long CurrentTime = GetTimerValue();
+    
+        if ((CurrentTime - LastTime) > ReadTimeout)
+            ReadState();
+    }
 };
 
-void TPCF8575_Button::Idle()
+
+class TPCF8575_OutputDevice : public TControl
 {
+private:
+    TPCF8575 *PCF{NULL};
+    uint8_t Pin{0};
+    uint8_t State{0};
 
-    // if (PCF == NULL)
-    //   return;
+public:
 
-    unsigned long CurrentTime = GetTimerValue();
 
-    if ((CurrentTime - LastTime) > ReadTimeout)
-        ReadState();
-}
+    TPCF8575_OutputDevice(TPCF8575 *_PCF, uint8_t _Pin) : TControl(NULL)
+    {
+        Pin = _Pin;
+        PCF = _PCF;
+        PCF->pinMode(Pin, OUTPUT);
+        
+    };
+
+    uint8_t GetState(){
+        return State;
+    }
+
+    void SetState( uint8_t _State){
+
+        State = _State;
+        PCF->digitalWrite( Pin , State );
+
+    }
+
+    int GetPin(){
+        return Pin;
+    }
+
+
+};
+
+
