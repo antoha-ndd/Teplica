@@ -1,27 +1,29 @@
 #pragma once
 #include "simpledevice.h"
-#include "PCF8575.h"
+
+#include "PCF8574.h"
 
 
-class TPCF8575 : public PCF8575
+class TPCF8574 : public PCF8574
 {
 public:
-    TPCF8575(uint8_t deviceAddress = 0x20) : PCF8575(deviceAddress)
+    TPCF8574(uint8_t deviceAddress = 0x20) : PCF8574(deviceAddress)
     {
+        setAddress(deviceAddress);
         begin();
     };
 };
 
 
-class TPCF8575_Button;
+class TPCF8574_Button;
 
-void EmptyTPCF8575ButtonEvent(TPCF8575_Button *Button) {};
-void TPCF8575_ButtonOnChangeState(TSimpleDevice *Device, bool State);
+void EmptyTPCF8574ButtonEvent(TPCF8574_Button *Button) {};
+void TPCF8574_ButtonOnChangeState(TSimpleDevice *Device, bool State);
 
-class TPCF8575_Button : public TControl
+class TPCF8574_Button : public TControl
 {
 private:
-    TPCF8575 *PCF{NULL};
+    TPCF8574 *PCF{NULL};
     uint8_t Pin{0};
     uint8_t State{0};
     uint32_t ReadTimeout{50};
@@ -43,7 +45,7 @@ private:
     {
         uint8_t PinState{0};
 
-        PinState = PCF->digitalRead(Pin);
+        PinState = PCF->read(Pin);
 
         if (PinState != State)
         {
@@ -57,17 +59,16 @@ private:
 public:
 
 
-    TPCF8575_Button(TPCF8575 *_PCF, uint8_t _Pin) : TControl(NULL)
+    TPCF8574_Button(TPCF8574 *_PCF, uint8_t _Pin) : TControl(NULL)
     {
         Pin = _Pin;
         PCF = _PCF;
-        PCF->pinMode(Pin, INPUT);
         PCF->begin();
     };
 
-    void (*OnPress)(TPCF8575_Button *Button){EmptyTPCF8575ButtonEvent};
-    void (*OnRelease)(TPCF8575_Button *Button){EmptyTPCF8575ButtonEvent};
-    void (*OnClick)(TPCF8575_Button *Button){EmptyTPCF8575ButtonEvent};
+    void (*OnPress)(TPCF8574_Button *Button){EmptyTPCF8574ButtonEvent};
+    void (*OnRelease)(TPCF8574_Button *Button){EmptyTPCF8574ButtonEvent};
+    void (*OnClick)(TPCF8574_Button *Button){EmptyTPCF8574ButtonEvent};
     
     int GetPin(){
         return Pin;
@@ -83,23 +84,22 @@ public:
 };
 
 
-class TPCF8575_OutputDevice : public TControl
+class TPCF8574_OutputDevice : public TControl
 {
 private:
-    TPCF8575 *PCF{NULL};
+    TPCF8574 *PCF{NULL};
     uint8_t Pin{0};
     bool State{false};
 
 public:
 
 
-    TPCF8575_OutputDevice(TPCF8575 *_PCF, uint8_t _Pin) : TControl(NULL)
+    TPCF8574_OutputDevice(TPCF8574 *_PCF, uint8_t _Pin) : TControl(NULL)
     {
         Pin = _Pin;
         PCF = _PCF;
-        PCF->pinMode(Pin, OUTPUT);
         PCF->begin();
-        PCF->digitalWrite( Pin , LOW );
+        PCF->write( Pin , LOW );
 
     };
 
@@ -110,8 +110,8 @@ public:
     void SetState( bool _State){
 
         State = _State;
-        if(_State) PCF->digitalWrite( Pin , HIGH );
-        else PCF->digitalWrite( Pin , LOW );
+        if(_State) PCF->write( Pin , HIGH );
+        else PCF->write( Pin , LOW );
 //        Serial.print("SET STATE : ");
   //      Serial.println(State);
 

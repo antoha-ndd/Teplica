@@ -1,4 +1,4 @@
-#if defined(ESP8266)
+#if defined(ESP8266) || defined(ESP32)
 #define OTA_ENABLE true
 
 // #include <ESP8266WebServer.h>

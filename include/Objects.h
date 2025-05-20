@@ -1,12 +1,14 @@
 #pragma once
 #include "stack.h"
 
-#if defined(ESP8266)
+#if defined(ESP8266) || defined(ESP32)
 #include "espwifi.h"
 #include <WiFiClient.h>
 #endif
 
 class TApplication;
+
+typedef unsigned long  TTimeStamp;
 
 typedef unsigned int ObjectId;
 typedef void (*TApplicationPrintCallback)(TApplication *App, String Buffer);
@@ -21,7 +23,7 @@ void DefaultApplicationPrintLnCallBack(TApplication *App, String Buffer)
 	Serial.println(Buffer);
 }
 
-#if defined(ESP8266)
+#if defined(ESP8266) || defined(ESP32)
 void Pairing()
 {
 	WiFiManager wifiManager;
@@ -151,7 +153,7 @@ public:
 		Controls = new TStack<TControl *>();
 		ActiveControls = new TStack<TActiveControl *>();
 
-#if defined(ESP8266)
+#if defined(ESP8266) || defined(ESP32) 
 
 		WiFi.begin();
 		WiFiManager wifiManager;
@@ -161,7 +163,7 @@ public:
 		ArduinoOTA.setPort(8266);
 		ArduinoOTA.setHostname("ESP_Board");
 		ArduinoOTA.setPassword("8764956");
-		ArduinoOTA.begin(true);
+		ArduinoOTA.begin();
 
 #endif
 
@@ -305,7 +307,7 @@ void TApplication::Stop()
 
 void TApplication::Idle()
 {
-#if defined(ESP8266)
+#if defined(ESP8266) || defined(ESP32)
 	static unsigned long WiFiConnectionTimeout = 0;
 
 	ArduinoOTA.handle();

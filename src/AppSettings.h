@@ -3,68 +3,189 @@
 #include "bmp180.h"
 #include "ObjectTimer.h"
 #include "ssd1306.h"
-#include "tpcf8575.h"
+#include "button.h"
+#include "varbasetypes.h"
+#include "MotorDriver.h"
 
 TApplication *App;
 TBMP180 *bmp;
 TTimer *Timer1;
 TSSD1306 *LCD;
-TPCF8575 *PCF;
+TButton *BtnOpen[3];
+TButton *BtnClose[3];
+// TBool MotorDriver[3];
+TMotorDriver *MotorDriver[3];
 
-TPCF8575_Button *Btn1, *Btn2, *Btn3, *Btn4, *Btn5, *Btn6;
-TPCF8575_OutputDevice *Od1, *Od2, *Od3, *Od4, *Od5, *Od6;
+void OnOTAProgress(unsigned int Progress, unsigned int Total)
+{
+
+    static int Pr = 0;
+    int CurrentPr = (Progress * 100) / Total;
+
+    if (CurrentPr != Pr)
+    {
+        Pr = CurrentPr;
+        LCD->clearDisplay();
+        LCD->setCursor(10, 1);
+        LCD->setTextSize(1);
+        LCD->print("Updating firmware");
+        LCD->setCursor(45, 15);
+        LCD->setTextSize(2);
+        LCD->print(String(Pr) + "%");
+        LCD->display();
+    }
+}
+
+void BtnOpen1_Click(TButton *Button)
+{
+
+    LCD->clearDisplay();
+    LCD->setCursor(1, 5);
+    LCD->setTextSize(2);
+    LCD->print("Open 1");
+    LCD->display();
+
+    MotorDriver[0]->Open();
+};
+
+void BtnClose1_Click(TButton *Button)
+{
+
+    LCD->clearDisplay();
+    LCD->setCursor(1, 5);
+    LCD->setTextSize(2);
+    LCD->print("Close 1");
+    LCD->display();
+
+    MotorDriver[0]->Close();
+};
+
+void BtnOpen2_Click(TButton *Button)
+{
+
+    LCD->clearDisplay();
+    LCD->setCursor(1, 5);
+    LCD->setTextSize(2);
+    LCD->print("Open 2");
+    LCD->display();
+
+    MotorDriver[1]->Open();
+
+};
+
+void BtnClose2_Click(TButton *Button)
+{
+    LCD->clearDisplay();
+    LCD->setCursor(1, 5);
+    LCD->setTextSize(2);
+    LCD->print("Close 2");
+    LCD->display();
+
+    MotorDriver[1]->Close();
+    
+};
+
+
+void BtnOpen3_Click(TButton *Button)
+{
+
+    LCD->clearDisplay();
+    LCD->setCursor(1, 5);
+    LCD->setTextSize(2);
+    LCD->print("Open 3");
+    LCD->display();
+
+    MotorDriver[2]->Open();
+};
+
+void BtnClose3_Click(TButton *Button)
+{
+    LCD->clearDisplay();
+    LCD->setCursor(1, 5);
+    LCD->setTextSize(2);
+    LCD->print("Close 3");
+    LCD->display();
+
+    MotorDriver[2]->Close();
+};
+
+
+
+
+void Timer1_Timeout(TTimer *Timer)
+{
+
+    App->PrintLn(String(bmp->Temperature(true)));
+
+    LCD->clearDisplay();
+    LCD->setCursor(20, 5);
+    LCD->setTextSize(3);
+    LCD->print(String(bmp->Temperature()).c_str());
+    LCD->display();
+};
+
+void Init()
+{
+    ArduinoOTA.onProgress(OnOTAProgress);
+    App = new TApplication();
+    App->Run();
+
+    LCD = new TSSD1306();
+    LCD->clearDisplay();
+    LCD->setCursor(20, 5);
+    LCD->setTextSize(3);
+    LCD->print("START");
+    LCD->display();
+    delay(1000);
+
+    bmp = new TBMP180(NULL);
+    bmp->Register(App);
+
+    Timer1 = new TTimer();
+    Timer1->OnTimeout = Timer1_Timeout;
+    Timer1->Register(App);
+    Timer1->Start(1000);
+
+    BtnOpen[0] = new TButton(NULL, 5, false);
+    BtnOpen[0]->OnPress = BtnOpen1_Click;
+    BtnOpen[0]->Register(App);
+
+    BtnOpen[1] = new TButton(NULL, 4, false);
+    BtnOpen[1]->OnPress = BtnOpen2_Click;
+    BtnOpen[1]->Register(App);
+    
+    BtnOpen[2] = new TButton(NULL, 18, false);
+    BtnOpen[2]->OnPress = BtnOpen3_Click;
+    BtnOpen[2]->Register(App);    
+
+    BtnClose[0] = new TButton(NULL, 19, false);
+    BtnClose[0]->OnPress = BtnClose1_Click;
+    BtnClose[0]->Register(App);
+
+    BtnClose[1] = new TButton(NULL, 16, false);
+    BtnClose[1]->OnPress = BtnClose2_Click;
+    BtnClose[1]->Register(App);
+
+    BtnClose[2] = new TButton(NULL, 17, false);
+    BtnClose[2]->OnPress = BtnClose3_Click;
+    BtnClose[2]->Register(App);
+
+
+    MotorDriver[0] = new TMotorDriver(14,27);
+    MotorDriver[1] = new TMotorDriver(12,13);
+    MotorDriver[2] = new TMotorDriver(2,26);
+        
+
+    MotorDriver[0]->Register(App);
+    MotorDriver[1]->Register(App);
+    MotorDriver[2]->Register(App);
+
+    MotorDriver[0]->InitClose();
+    MotorDriver[1]->InitClose();
+    MotorDriver[2]->InitClose();
+
+
+
+}
 // open 10 13 12
 // close 8 9 11
-
-void Timer1_Timeout(TTimer *Timer){
-
-    App->PrintLn( String( bmp->Temperature( true ) ) );
-    
-    LCD->clearDisplay();
-    LCD->setCursor(20,5);
-    LCD->setTextSize(3);
-    LCD->print( String( bmp->Temperature() ).c_str() );
-    LCD->display();
-
-};
-
-void Btn1_OnClick(TPCF8575_Button *Button){
-    
-    App->PrintLn( "1 Click"  );
-    LCD->clearDisplay();
-    LCD->setCursor(1,5);
-    LCD->setTextSize(2);
-
-    LCD->print(  String( Button->GetPin() ) + " Click" );
-    LCD->display();
-
-};
-
-
-void Btn1_OnPress(TPCF8575_Button *Button){
-
-    App->PrintLn( "1 Press"  );
-
-    LCD->clearDisplay();
-    LCD->setCursor(1,5);
-    LCD->setTextSize(2);
-
-    LCD->print( " Press" );
-    LCD->display();
-
-};
-
-void Btn1_OnRelease(TPCF8575_Button *Button){
-
-    App->PrintLn( " Release"  );
-
-    LCD->clearDisplay();
-    LCD->setCursor(1,5);
-    LCD->setTextSize(2);
-
-    LCD->print( " Release" );
-    LCD->display();
-
-
-};
-
