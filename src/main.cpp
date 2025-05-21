@@ -2,16 +2,15 @@
 #include <Arduino.h>
 #include "AppSettings.h"
 
-
-void setup() {
+void setup()
+{
+  Serial.begin(57600);
   Init();
- 
-
 }
 
-void loop() {
-  
-    App->Idle();
+void loop()
+{
 
+  App->Idle();
+   configServer.handleClient();
 }
-

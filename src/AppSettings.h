@@ -1,3 +1,6 @@
+
+#define GH_NO_PAIRS
+
 #include <espwifi.h>
 #include "Objects.h"
 #include "bmp180.h"
@@ -6,6 +9,7 @@
 #include "button.h"
 #include "varbasetypes.h"
 #include "MotorDriver.h"
+#include "websettings.h"
 
 TApplication *App;
 TBMP180 *bmp;
@@ -13,8 +17,21 @@ TTimer *Timer1;
 TSSD1306 *LCD;
 TButton *BtnOpen[3];
 TButton *BtnClose[3];
-// TBool MotorDriver[3];
 TMotorDriver *MotorDriver[3];
+// Список конфигурируемых полей
+std::vector<ConfigWebServer::FieldDefinition> fields = {
+    ConfigWebServer::FieldDefinition("", "", true, "Network Settings"),
+    ConfigWebServer::FieldDefinition("ssid", "text", false, ""),
+    ConfigWebServer::FieldDefinition("wifi_pass", "password", false, ""),
+    ConfigWebServer::FieldDefinition("", "", true, "Device Configuration"),
+    ConfigWebServer::FieldDefinition("interval", "number", false, ""),
+    ConfigWebServer::FieldDefinition("threshold", "number", false, ""),
+    ConfigWebServer::FieldDefinition("", "", true, "Advanced"),
+    ConfigWebServer::FieldDefinition("email", "email", false, ""),
+    ConfigWebServer::FieldDefinition("api_key", "password", false, "")
+};
+
+ConfigWebServer configServer(fields);
 
 void OnOTAProgress(unsigned int Progress, unsigned int Total)
 {
@@ -70,7 +87,6 @@ void BtnOpen2_Click(TButton *Button)
     LCD->display();
 
     MotorDriver[1]->Open();
-
 };
 
 void BtnClose2_Click(TButton *Button)
@@ -82,9 +98,7 @@ void BtnClose2_Click(TButton *Button)
     LCD->display();
 
     MotorDriver[1]->Close();
-    
 };
-
 
 void BtnOpen3_Click(TButton *Button)
 {
@@ -108,9 +122,6 @@ void BtnClose3_Click(TButton *Button)
 
     MotorDriver[2]->Close();
 };
-
-
-
 
 void Timer1_Timeout(TTimer *Timer)
 {
@@ -153,10 +164,10 @@ void Init()
     BtnOpen[1] = new TButton(NULL, 4, false);
     BtnOpen[1]->OnPress = BtnOpen2_Click;
     BtnOpen[1]->Register(App);
-    
+
     BtnOpen[2] = new TButton(NULL, 18, false);
     BtnOpen[2]->OnPress = BtnOpen3_Click;
-    BtnOpen[2]->Register(App);    
+    BtnOpen[2]->Register(App);
 
     BtnClose[0] = new TButton(NULL, 19, false);
     BtnClose[0]->OnPress = BtnClose1_Click;
@@ -170,11 +181,9 @@ void Init()
     BtnClose[2]->OnPress = BtnClose3_Click;
     BtnClose[2]->Register(App);
 
-
-    MotorDriver[0] = new TMotorDriver(14,27);
-    MotorDriver[1] = new TMotorDriver(12,13);
-    MotorDriver[2] = new TMotorDriver(2,26);
-        
+    MotorDriver[0] = new TMotorDriver(14, 27);
+    MotorDriver[1] = new TMotorDriver(12, 13);
+    MotorDriver[2] = new TMotorDriver(2, 26);
 
     MotorDriver[0]->Register(App);
     MotorDriver[1]->Register(App);
@@ -185,6 +194,7 @@ void Init()
     MotorDriver[2]->InitClose();
 
 
+    configServer.begin();
 
 }
 // open 10 13 12
