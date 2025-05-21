@@ -20,15 +20,20 @@ TButton *BtnClose[3];
 TMotorDriver *MotorDriver[3];
 // Список конфигурируемых полей
 std::vector<ConfigWebServer::FieldDefinition> fields = {
-    ConfigWebServer::FieldDefinition("", "", true, "Network Settings"),
-    ConfigWebServer::FieldDefinition("ssid", "text", false, ""),
-    ConfigWebServer::FieldDefinition("wifi_pass", "password", false, ""),
-    ConfigWebServer::FieldDefinition("", "", true, "Device Configuration"),
-    ConfigWebServer::FieldDefinition("interval", "number", false, ""),
-    ConfigWebServer::FieldDefinition("threshold", "number", false, ""),
-    ConfigWebServer::FieldDefinition("", "", true, "Advanced"),
-    ConfigWebServer::FieldDefinition("email", "email", false, ""),
-    ConfigWebServer::FieldDefinition("api_key", "password", false, "")
+    ConfigWebServer::FieldDefinition("", "", true, "MQTT настройки"),
+    ConfigWebServer::FieldDefinition("MQTTServer", "text", false, "Сервер"),
+    ConfigWebServer::FieldDefinition("MQTTPort", "number", false, "Порт"),
+    ConfigWebServer::FieldDefinition("MQTTTopic", "text", false, "Топик"),
+    ConfigWebServer::FieldDefinition("", "", true, "Окно 1"),
+    ConfigWebServer::FieldDefinition("Min1", "number", false, "Закрытие"),
+    ConfigWebServer::FieldDefinition("Max1", "number", false, "Открытие"),
+    ConfigWebServer::FieldDefinition("", "", true, "Окно 2"),
+    ConfigWebServer::FieldDefinition("Min2", "number", false, "Закрытие"),
+    ConfigWebServer::FieldDefinition("Max2", "number", false, "Открытие"),
+    ConfigWebServer::FieldDefinition("", "", true, "Дверь"),
+    ConfigWebServer::FieldDefinition("Min3", "number", false, "Закрытие"),
+    ConfigWebServer::FieldDefinition("Max3", "number", false, "Открытие")
+
 };
 
 ConfigWebServer configServer(fields);

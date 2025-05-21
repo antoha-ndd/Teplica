@@ -25,6 +25,7 @@ private:
 <!DOCTYPE html>
 <html>
 <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         * {
@@ -34,7 +35,7 @@ private:
 
         body {
             margin: 0;
-            padding: 20px;
+            padding: 10px;
             background-color: #f0f2f5;
         }
 
@@ -42,7 +43,7 @@ private:
             max-width: 600px;
             margin: 0 auto;
             background: white;
-            padding: 30px;
+            padding: 10px;
             border-radius: 12px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
@@ -54,7 +55,7 @@ private:
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
 
         label {
@@ -92,7 +93,7 @@ private:
         }
 
         .divider {
-            margin: 25px 0;
+            margin: 5px 0;
             text-align: center;
             position: relative;
         }
@@ -101,13 +102,13 @@ private:
             border: 0;
             height: 1px;
             background: #ddd;
-            margin: 20px 0;
+            margin: 10px 0;
         }
 
         .section-title {
             display: inline-block;
             background: white;
-            padding: 0 15px;
+            padding: 0 10px;
             color: #1a73e8;
             font-weight: bold;
             position: relative;
@@ -121,7 +122,7 @@ private:
             }
             
             .container {
-                padding: 20px;
+                padding: 10px;
             }
             
             .section-title {
@@ -166,7 +167,7 @@ private:
                 html += escapeHTML(field.sectionLabel);
                 html += "</span></div>";
             } else {
-                html += "<label>" + escapeHTML(field.name) + "</label>";
+                html += "<label>" + escapeHTML(field.sectionLabel) + "</label>";
                 html += "<input type='" + field.type + "'";
                 html += " name='" + escapeHTML(field.name) + "'";
                 html += " value='" + escapeHTML(fieldValues[field.name]) + "'>";
