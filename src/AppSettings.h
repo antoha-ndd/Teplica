@@ -18,25 +18,7 @@ TSSD1306 *LCD;
 TButton *BtnOpen[3];
 TButton *BtnClose[3];
 TMotorDriver *MotorDriver[3];
-// Список конфигурируемых полей
-std::vector<ConfigWebServer::FieldDefinition> fields = {
-    ConfigWebServer::FieldDefinition("", "", true, "MQTT настройки"),
-    ConfigWebServer::FieldDefinition("MQTTServer", "text", false, "Сервер"),
-    ConfigWebServer::FieldDefinition("MQTTPort", "number", false, "Порт"),
-    ConfigWebServer::FieldDefinition("MQTTTopic", "text", false, "Топик"),
-    ConfigWebServer::FieldDefinition("", "", true, "Окно 1"),
-    ConfigWebServer::FieldDefinition("Min1", "number", false, "Закрытие"),
-    ConfigWebServer::FieldDefinition("Max1", "number", false, "Открытие"),
-    ConfigWebServer::FieldDefinition("", "", true, "Окно 2"),
-    ConfigWebServer::FieldDefinition("Min2", "number", false, "Закрытие"),
-    ConfigWebServer::FieldDefinition("Max2", "number", false, "Открытие"),
-    ConfigWebServer::FieldDefinition("", "", true, "Дверь"),
-    ConfigWebServer::FieldDefinition("Min3", "number", false, "Закрытие"),
-    ConfigWebServer::FieldDefinition("Max3", "number", false, "Открытие")
-
-};
-
-ConfigWebServer configServer(fields);
+ConfigWebServer configServer(80);
 
 void OnOTAProgress(unsigned int Progress, unsigned int Total)
 {
@@ -186,6 +168,26 @@ void Init()
     BtnClose[2]->OnPress = BtnClose3_Click;
     BtnClose[2]->Register(App);
 
+    configServer.fields= {
+        ConfigWebServer::FieldDefinition("", "", true, "MQTT настройки"),
+        ConfigWebServer::FieldDefinition("MQTTServer", "text", false, "Сервер"),
+        ConfigWebServer::FieldDefinition("MQTTPort", "number", false, "Порт"),
+        ConfigWebServer::FieldDefinition("MQTTTopic", "text", false, "Топик"),
+        ConfigWebServer::FieldDefinition("", "", true, "Окно 1"),
+        ConfigWebServer::FieldDefinition("Min1", "number", false, "Закрытие"),
+        ConfigWebServer::FieldDefinition("Max1", "number", false, "Открытие"),
+        ConfigWebServer::FieldDefinition("", "", true, "Окно 2"),
+        ConfigWebServer::FieldDefinition("Min2", "number", false, "Закрытие"),
+        ConfigWebServer::FieldDefinition("Max2", "number", false, "Открытие"),
+        ConfigWebServer::FieldDefinition("", "", true, "Дверь"),
+        ConfigWebServer::FieldDefinition("Min3", "number", false, "Закрытие"),
+        ConfigWebServer::FieldDefinition("Max3", "number", false, "Открытие")
+    
+    };
+
+    configServer.Register(App);
+
+
     MotorDriver[0] = new TMotorDriver(14, 27);
     MotorDriver[1] = new TMotorDriver(12, 13);
     MotorDriver[2] = new TMotorDriver(2, 26);
@@ -198,8 +200,20 @@ void Init()
     MotorDriver[1]->InitClose();
     MotorDriver[2]->InitClose();
 
+    MotorDriver[0]->AutoClose = true;
+    MotorDriver[0]->AutoOpen = true;
 
-    configServer.begin();
+    MotorDriver[1]->AutoClose = true;
+    MotorDriver[1]->AutoOpen = true;
+
+    MotorDriver[2]->AutoClose = true;
+    MotorDriver[2]->AutoOpen = true;
+
+    MotorDriver[0]->bmp = bmp;
+    MotorDriver[1]->bmp = bmp;
+    MotorDriver[2]->bmp = bmp;
+
+
 
 }
 // open 10 13 12

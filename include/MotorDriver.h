@@ -3,6 +3,7 @@
 #include "simpledevice.h"
 
 class TMotorDriver;
+void TMotorDriverEmptyOnChageState(TMotorDriver *Device){};
 
 class TMotorDriver : public TControl
 {
@@ -12,6 +13,12 @@ private:
     bool State{false};
 
 public:
+    bool AutoOpen{false};
+    bool AutoClose{false};
+    TBMP180 *bmp{nullptr};
+    float OpenValue{NAN};
+    float CloseValue{NAN};
+
     TTimeStamp Timeout{10000};
 
     TSimpleDeviceType DeviceType{TSimpleDeviceType::OutputDevice};
@@ -46,7 +53,7 @@ public:
         digitalWrite(OpenPin, HIGH);
         TimeStamp = millis();
         State = true;
-       // OnChageState(this);
+        OnChageState(this);
 
     }
 
@@ -66,10 +73,23 @@ public:
         State = false;
         TimeStamp = millis();
 
-       // OnChageState(this);
+        OnChageState(this);
     }
 
     void Idle(){
+
+
+        if(!State && AutoOpen && !isnanf(OpenValue) && bmp!=nullptr){
+
+            if(OpenValue > bmp->Temperature()) Open();
+
+        }
+
+        if(State && AutoClose && !isnanf(CloseValue) && bmp!=nullptr){
+
+            if(CloseValue < bmp->Temperature()) Close();
+
+        }
 
         if(TimeStamp == 0) return;
 
@@ -85,5 +105,5 @@ public:
 
     }
 
-    void (*OnChageState)(TMotorDriver *Device){nullptr};
+    void (*OnChageState)(TMotorDriver *Device){TMotorDriverEmptyOnChageState};
 };

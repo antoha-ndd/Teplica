@@ -1,9 +1,11 @@
+#pragma once
+#include "Objects.h"
 #include <WebServer.h>
 #include <Preferences.h>
 #include <vector>
 #include <map>
 
-class ConfigWebServer {
+class ConfigWebServer:public TControl {
 public:
     struct FieldDefinition {
         String name;
@@ -18,7 +20,7 @@ public:
 private:
     WebServer server;
     Preferences preferences;
-    std::vector<FieldDefinition> fields;
+    
     std::map<String, String> fieldValues;
 
     String htmlHeader = R"rawliteral(
@@ -196,16 +198,13 @@ private:
     }
 
 public:
-    ConfigWebServer(const std::vector<FieldDefinition>& fieldsList) 
-        : server(80), fields(fieldsList) {
+    std::vector<FieldDefinition> fields;
+    ConfigWebServer(int port) {
         for (const auto& field : fields) {
             if (!field.isSection) {
                 fieldValues[field.name] = "";
             }
         }
-    }
-
-    void begin() {
         preferences.begin("config", false);
         for (const auto& field : fields) {
             if (!field.isSection) {
@@ -214,10 +213,11 @@ public:
         }
 
         server.on("/", HTTP_ANY, [this]() { handleRoot(); });
-        server.begin();
+        server.begin(port);
     }
 
-    void handleClient() {
+
+    void Idle() {
         server.handleClient();
     }
 
