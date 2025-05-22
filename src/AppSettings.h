@@ -345,7 +345,13 @@ void action()
 
             preferences.end();
 
-            LoadSettings();
+            MotorDriver[0]->AutoClose = data.ac[0];
+            MotorDriver[1]->AutoClose = data.ac[1];
+            MotorDriver[2]->AutoClose = data.ac[2];
+        
+            MotorDriver[0]->AutoOpen = data.ao[0];
+            MotorDriver[1]->AutoOpen = data.ao[1];
+            MotorDriver[2]->AutoOpen = data.ao[2];
         }
 
         if (ui.click("RebootBtn"))
@@ -373,7 +379,7 @@ void action()
 
 void Init()
 {
-    LoadSettings();
+    
     ArduinoOTA.onProgress(OnOTAProgress);
     App = new TApplication();
     App->Run();
@@ -447,6 +453,9 @@ void Init()
     ui.start();
     ui.attachBuild(build);
     ui.attach(action);
+
+
+    LoadSettings();
 }
 // open 10 13 12
 // close 8 9 11
