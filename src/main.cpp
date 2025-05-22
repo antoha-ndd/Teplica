@@ -12,5 +12,5 @@ void loop()
 {
 
   App->Idle();
-   
+  ui.tick();
 }

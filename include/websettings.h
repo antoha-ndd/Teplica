@@ -141,7 +141,7 @@ private:
 </head>
 <body>
     <div class="container">
-        <h1>ESP32 Configuration</h1>
+        <h1>Теплица</h1>
         <form method="POST">
 )rawliteral";
 
@@ -193,11 +193,13 @@ private:
 
         String html = htmlHeader;
         generateForm(html);
+        html += "<label>TEST</label>";
         html += htmlFooter;
-        server.send(200, "text/html", html);
+        server.send(200, "text/html", "TEST");
     }
 
 public:
+    String AdvancedHTML="";
     std::vector<FieldDefinition> fields;
     ConfigWebServer(int port) {
         for (const auto& field : fields) {

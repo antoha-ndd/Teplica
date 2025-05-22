@@ -9,7 +9,11 @@
 #include "button.h"
 #include "varbasetypes.h"
 #include "MotorDriver.h"
-#include "websettings.h"
+#include <GyverPortal.h>
+#include <Preferences.h>
+
+GyverPortal ui;
+Preferences preferences;
 
 TApplication *App;
 TBMP180 *bmp;
@@ -18,8 +22,17 @@ TSSD1306 *LCD;
 TButton *BtnOpen[3];
 TButton *BtnClose[3];
 TMotorDriver *MotorDriver[3];
-ConfigWebServer configServer(80);
+// ConfigWebServer configServer(80);
 
+struct Data
+{
+    int Port;
+    char MQTTServer[100];
+    char MQTTTopic[100];
+    float o[3], c[3];
+    bool ac[3], ao[3];
+};
+Data data;
 
 void OnOTAProgress(unsigned int Progress, unsigned int Total)
 {
@@ -126,19 +139,241 @@ void Timer1_Timeout(TTimer *Timer)
 void Timer2_Timeout(TTimer *Timer)
 {
     float temp = bmp->Temperature(true);
-        
+
     for (int i = 0; i < 3; i++)
     {
-        float Ct = configServer.getValue("Min"+String(i+1)).toFloat();
-        float Ot = configServer.getValue("Max"+String(i+1)).toFloat();
-    Ot = 15;
-        if (MotorDriver[i]->AutoOpen && Ot<temp) MotorDriver[i]->Open();
-        if (MotorDriver[i]->AutoClose && !isnanf(Ct) && MotorDriver[i]->IsOpen() && Ct>temp) MotorDriver[i]->Close();
+        if (MotorDriver[i]->AutoOpen && data.o[i] < temp)
+            MotorDriver[i]->Open();
+
+        if (MotorDriver[i]->AutoClose && data.c[i] > temp)
+            MotorDriver[i]->Close();
+    }
+}
+
+void LoadSettings(){
+    preferences.begin("config", false);
+
+    data.c[0] = preferences.getFloat("c1", 0);
+    data.c[1] = preferences.getFloat("c2", 0);
+    data.c[2] = preferences.getFloat("c3", 0);
+    data.o[0] = preferences.getFloat("o1", 0);
+    data.o[1] = preferences.getFloat("o2", 0);
+    data.o[2] = preferences.getFloat("o3", 0);
+
+    data.ac[0] = preferences.getBool("ac1", false);
+    data.ac[1] = preferences.getBool("ac2", false);
+    data.ac[2] = preferences.getBool("ac3", false);
+
+    data.ao[0] = preferences.getBool("ao1", false);
+    data.ao[1] = preferences.getBool("ao2", false);
+    data.ao[2] = preferences.getBool("ao3", false);
+
+    data.Port = preferences.getInt("Port", 1883);
+    strcpy(data.MQTTServer, preferences.getString("Server", "").c_str());
+    strcpy(data.MQTTTopic, preferences.getString("Topic", "").c_str());
+
+
+    MotorDriver[0]->AutoClose = data.ac[0];
+    MotorDriver[1]->AutoClose = data.ac[1];
+    MotorDriver[2]->AutoClose = data.ac[2];
+
+    MotorDriver[0]->AutoOpen = data.ao[0];
+    MotorDriver[1]->AutoOpen = data.ao[1];
+    MotorDriver[2]->AutoOpen = data.ao[2];
+
+    preferences.end();
+}
+
+void build()
+{
+
+    LoadSettings();
+
+    GP.BUILD_BEGIN(GP_DARK, 500);
+
+    GP.LABEL("Температура : " + String(bmp->Temperature(true)));
+    GP.BREAK();
+
+    GP.BUTTON("SaveBtn", "Сохранить");
+
+    GP_MAKE_BLOCK_TAB("Окно 1",
+
+                      GP_MAKE_BOX(
+                          GP.LABEL("Открыто");
+                          GP.SWITCH("", true, GP_GREEN, true););
+
+                      GP_MAKE_BOX(
+                          GP_MAKE_BOX(
+                              GP.LABEL("Закрытие");
+                              GP.NUMBER_F("c1", "", data.c[0]););
+
+                          GP_MAKE_BOX(
+                              GP.LABEL("Открытие");
+                              GP.NUMBER_F("o1", "", data.o[0])););
+
+                      GP_MAKE_BOX(
+
+                          GP_MAKE_BOX(
+                              GP.LABEL("Автооткрытие");
+                              GP.SWITCH("ao1", data.ao[0]););
+
+                          GP_MAKE_BOX(
+                              GP.LABEL("Автозакрытие");
+                              GP.SWITCH("ac1", data.ac[0]));
+
+                      );
+
+                      GP_MAKE_BOX(
+                          GP.BUTTON("Open1", "Открыть");
+                          GP.BUTTON("Close1", "Закрыть"););
+
+    );
+
+    GP_MAKE_BLOCK_TAB("Окно 2",
+
+                      GP_MAKE_BOX(
+                          GP_MAKE_BOX(
+                              GP.LABEL("Закрытие");
+                              GP.NUMBER_F("c2", "", data.c[1]););
+
+                          GP_MAKE_BOX(
+                              GP.LABEL("Открытие");
+                              GP.NUMBER_F("o2", "", data.o[1])););
+
+                      GP_MAKE_BOX(
+                          GP_MAKE_BOX(
+                              GP.LABEL("Автооткрытие");
+                              GP.SWITCH("ao2", data.ao[1]););
+
+                          GP_MAKE_BOX(
+                              GP.LABEL("Автозакрытие");
+                              GP.SWITCH("ac2", data.ac[1])););
+
+                      GP_MAKE_BOX(
+                          GP.BUTTON("Open2", "Открыть");
+                          GP.BUTTON("Close2", "Закрыть");););
+
+    GP_MAKE_BLOCK_TAB("Дверь",
+                      GP_MAKE_BOX(
+                          GP_MAKE_BOX(
+                              GP.LABEL("Закрытие");
+                              GP.NUMBER_F("c3", "", data.c[2]););
+
+                          GP_MAKE_BOX(
+                              GP.LABEL("Открытие");
+                              GP.NUMBER_F("o3", "", data.o[2])););
+                      GP_MAKE_BOX(
+                          GP_MAKE_BOX(
+                              GP.LABEL("Автооткрытие");
+                              GP.SWITCH("ao3", data.ao[2]););
+
+                          GP_MAKE_BOX(
+                              GP.LABEL("Автозакрытие");
+                              GP.SWITCH("ac3", data.ac[2])););
+                      GP_MAKE_BOX(
+                          GP.BUTTON("Open3", "Открыть");
+                          GP.BUTTON("Close3", "Закрыть"););
+
+    );
+
+    GP_MAKE_BLOCK_TAB("MQTT",
+                      GP_MAKE_BOX(
+                          GP.LABEL("Cервер");
+                          GP.TEXT("MQTTServer", "", data.MQTTServer););
+
+                      GP_MAKE_BOX(
+                          GP.LABEL("Порт");
+                          GP.NUMBER("MQTTPort", "", data.Port));
+
+                      GP_MAKE_BOX(
+                          GP.LABEL("Топик");
+                          GP.TEXT("MQTTTopic", "", data.MQTTTopic);););
+
+    GP.BUTTON("RebootBtn", "Перезагрузить");
+
+    GP.BUILD_END();
+
+
+}
+
+void action()
+{
+    if (ui.click())
+    {
+        // по клику переписать пришедшие данные в переменные
+        ui.clickFloat("c1", data.c[0]);
+        ui.clickFloat("c2", data.c[1]);
+        ui.clickFloat("c3", data.c[2]);
+        ui.clickFloat("o1", data.o[0]);
+        ui.clickFloat("o2", data.o[1]);
+        ui.clickFloat("o3", data.o[2]);
+
+        ui.clickBool("ao1", data.ao[0]);
+        ui.clickBool("ao2", data.ao[1]);
+        ui.clickBool("ao3", data.ao[2]);
+
+        ui.clickBool("ac1", data.ac[0]);
+        ui.clickBool("ac2", data.ac[1]);
+        ui.clickBool("ac3", data.ac[2]);
+
+        ui.clickStr("MQTTServer", data.MQTTServer);
+        ui.clickStr("MQTTTopic", data.MQTTTopic);
+        ui.clickInt("MQTTPort", data.Port);
+
+        if (ui.click("SaveBtn"))
+        {
+
+            preferences.begin("config", false);
+            preferences.putFloat("c1", data.c[0]);
+            preferences.putFloat("c2", data.c[1]);
+            preferences.putFloat("c3", data.c[2]);
+            preferences.putFloat("o1", data.o[0]);
+            preferences.putFloat("o2", data.o[1]);
+            preferences.putFloat("o3", data.o[2]);
+
+            preferences.putBool("ac1", data.ac[0]);
+            preferences.putBool("ac2", data.ac[1]);
+            preferences.putBool("ac3", data.ac[2]);
+
+            preferences.putBool("ao1", data.ao[0]);
+            preferences.putBool("ao2", data.ao[1]);
+            preferences.putBool("ao3", data.ao[2]);
+
+            preferences.putInt("Port", data.Port);
+            preferences.putString("Server", data.MQTTServer);
+            preferences.putString("Topic", data.MQTTTopic);
+
+            preferences.end();
+
+            LoadSettings();
+        }
+
+        if (ui.click("RebootBtn"))
+            ESP.restart();
+
+        if (ui.click("Open1"))
+            MotorDriver[0]->Open();
+
+        if (ui.click("Open2"))
+            MotorDriver[1]->Open();
+
+        if (ui.click("Open3"))
+            MotorDriver[2]->Open();
+
+        if (ui.click("Close1"))
+            MotorDriver[0]->Close();
+
+        if (ui.click("Close2"))
+            MotorDriver[1]->Close();
+
+        if (ui.click("Close3"))
+            MotorDriver[2]->Close();
     }
 }
 
 void Init()
 {
+    LoadSettings();
     ArduinoOTA.onProgress(OnOTAProgress);
     App = new TApplication();
     App->Run();
@@ -188,26 +423,6 @@ void Init()
     BtnClose[2]->OnPress = BtnClose3_Click;
     BtnClose[2]->Register(App);
 
-    configServer.fields = {
-        
-        ConfigWebServer::FieldDefinition("", "", true, "MQTT настройки"),
-        ConfigWebServer::FieldDefinition("MQTTServer", "text", false, "Сервер"),
-        ConfigWebServer::FieldDefinition("MQTTPort", "number", false, "Порт"),
-        ConfigWebServer::FieldDefinition("MQTTTopic", "text", false, "Топик"),
-        ConfigWebServer::FieldDefinition("", "", true, "Окно 1"),
-        ConfigWebServer::FieldDefinition("Min1", "number", false, "Закрытие"),
-        ConfigWebServer::FieldDefinition("Max1", "number", false, "Открытие"),
-        ConfigWebServer::FieldDefinition("", "", true, "Окно 2"),
-        ConfigWebServer::FieldDefinition("Min2", "number", false, "Закрытие"),
-        ConfigWebServer::FieldDefinition("Max2", "number", false, "Открытие"),
-        ConfigWebServer::FieldDefinition("", "", true, "Дверь"),
-        ConfigWebServer::FieldDefinition("Min3", "number", false, "Закрытие"),
-        ConfigWebServer::FieldDefinition("Max3", "number", false, "Открытие")
-
-    };
-
-    configServer.Register(App);
-
     MotorDriver[0] = new TMotorDriver(14, 27);
     MotorDriver[1] = new TMotorDriver(12, 13);
     MotorDriver[2] = new TMotorDriver(2, 26);
@@ -228,6 +443,10 @@ void Init()
 
     MotorDriver[2]->AutoClose = true;
     MotorDriver[2]->AutoOpen = true;
+
+    ui.start();
+    ui.attachBuild(build);
+    ui.attach(action);
 }
 // open 10 13 12
 // close 8 9 11
