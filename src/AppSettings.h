@@ -13,12 +13,13 @@
 
 TApplication *App;
 TBMP180 *bmp;
-TTimer *Timer1;
+TTimer *Timer1, *Timer2;
 TSSD1306 *LCD;
 TButton *BtnOpen[3];
 TButton *BtnClose[3];
 TMotorDriver *MotorDriver[3];
 ConfigWebServer configServer(80);
+
 
 void OnOTAProgress(unsigned int Progress, unsigned int Total)
 {
@@ -122,6 +123,20 @@ void Timer1_Timeout(TTimer *Timer)
     LCD->display();
 };
 
+void Timer2_Timeout(TTimer *Timer)
+{
+    float temp = bmp->Temperature(true);
+        
+    for (int i = 0; i < 3; i++)
+    {
+        float Ct = configServer.getValue("Min"+String(i+1)).toFloat();
+        float Ot = configServer.getValue("Max"+String(i+1)).toFloat();
+    Ot = 15;
+        if (MotorDriver[i]->AutoOpen && Ot<temp) MotorDriver[i]->Open();
+        if (MotorDriver[i]->AutoClose && !isnanf(Ct) && MotorDriver[i]->IsOpen() && Ct>temp) MotorDriver[i]->Close();
+    }
+}
+
 void Init()
 {
     ArduinoOTA.onProgress(OnOTAProgress);
@@ -142,7 +157,12 @@ void Init()
     Timer1 = new TTimer();
     Timer1->OnTimeout = Timer1_Timeout;
     Timer1->Register(App);
-    Timer1->Start(1000);
+    Timer1->Start(5000);
+
+    Timer2 = new TTimer();
+    Timer2->OnTimeout = Timer2_Timeout;
+    Timer2->Register(App);
+    Timer2->Start(1000);
 
     BtnOpen[0] = new TButton(NULL, 5, false);
     BtnOpen[0]->OnPress = BtnOpen1_Click;
@@ -168,7 +188,8 @@ void Init()
     BtnClose[2]->OnPress = BtnClose3_Click;
     BtnClose[2]->Register(App);
 
-    configServer.fields= {
+    configServer.fields = {
+        
         ConfigWebServer::FieldDefinition("", "", true, "MQTT настройки"),
         ConfigWebServer::FieldDefinition("MQTTServer", "text", false, "Сервер"),
         ConfigWebServer::FieldDefinition("MQTTPort", "number", false, "Порт"),
@@ -182,11 +203,10 @@ void Init()
         ConfigWebServer::FieldDefinition("", "", true, "Дверь"),
         ConfigWebServer::FieldDefinition("Min3", "number", false, "Закрытие"),
         ConfigWebServer::FieldDefinition("Max3", "number", false, "Открытие")
-    
+
     };
 
     configServer.Register(App);
-
 
     MotorDriver[0] = new TMotorDriver(14, 27);
     MotorDriver[1] = new TMotorDriver(12, 13);
@@ -208,13 +228,6 @@ void Init()
 
     MotorDriver[2]->AutoClose = true;
     MotorDriver[2]->AutoOpen = true;
-
-    MotorDriver[0]->bmp = bmp;
-    MotorDriver[1]->bmp = bmp;
-    MotorDriver[2]->bmp = bmp;
-
-
-
 }
 // open 10 13 12
 // close 8 9 11
