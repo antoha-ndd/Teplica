@@ -138,6 +138,11 @@ void Timer1_Timeout(TTimer *Timer)
 
 void Timer2_Timeout(TTimer *Timer)
 {
+
+    ui.updateFloat("o1", 123);
+    ui.updateBool("ao2", false);
+    ui.updateBool("ao3", false);
+
     float temp = bmp->Temperature(true);
 
     for (int i = 0; i < 3; i++)
@@ -150,7 +155,8 @@ void Timer2_Timeout(TTimer *Timer)
     }
 }
 
-void LoadSettings(){
+void LoadSettings()
+{
     preferences.begin("config", false);
 
     data.c[0] = preferences.getFloat("c1", 0);
@@ -171,7 +177,6 @@ void LoadSettings(){
     data.Port = preferences.getInt("Port", 1883);
     strcpy(data.MQTTServer, preferences.getString("Server", "").c_str());
     strcpy(data.MQTTTopic, preferences.getString("Topic", "").c_str());
-
 
     MotorDriver[0]->AutoClose = data.ac[0];
     MotorDriver[1]->AutoClose = data.ac[1];
@@ -292,8 +297,6 @@ void build()
     GP.BUTTON("RebootBtn", "Перезагрузить");
 
     GP.BUILD_END();
-
-
 }
 
 void action()
@@ -348,7 +351,7 @@ void action()
             MotorDriver[0]->AutoClose = data.ac[0];
             MotorDriver[1]->AutoClose = data.ac[1];
             MotorDriver[2]->AutoClose = data.ac[2];
-        
+
             MotorDriver[0]->AutoOpen = data.ao[0];
             MotorDriver[1]->AutoOpen = data.ao[1];
             MotorDriver[2]->AutoOpen = data.ao[2];
@@ -379,7 +382,7 @@ void action()
 
 void Init()
 {
-    
+
     ArduinoOTA.onProgress(OnOTAProgress);
     App = new TApplication();
     App->Run();
@@ -453,7 +456,6 @@ void Init()
     ui.start();
     ui.attachBuild(build);
     ui.attach(action);
-
 
     LoadSettings();
 }
