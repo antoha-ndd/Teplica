@@ -188,13 +188,6 @@ void Timer1_Timeout(TTimer *Timer)
 void Timer2_Timeout(TTimer *Timer)
 {
 
-<<<<<<< HEAD
-=======
-    ui.updateFloat("o1", 123);
-    ui.updateBool("ao2", false);
-    ui.updateBool("ao3", false);
-
->>>>>>> c82a90a0c2799eca4d758472ffcba201160e153b
     float temp = bmp->Temperature(true);
 
     for (int i = 0; i < 3; i++)
@@ -209,11 +202,8 @@ void Timer2_Timeout(TTimer *Timer)
 
 void LoadSettings()
 {
-<<<<<<< HEAD
     WiFiManager wm; // Создаем объект WiFiManager
 
-=======
->>>>>>> c82a90a0c2799eca4d758472ffcba201160e153b
     preferences.begin("config", false);
 
     data.c[0] = preferences.getFloat("c1", 0);
@@ -231,15 +221,9 @@ void LoadSettings()
     data.ao[1] = preferences.getBool("ao2", false);
     data.ao[2] = preferences.getBool("ao3", false);
 
-<<<<<<< HEAD
     
     strcpy(data.SSID, preferences.getString("SSID", "").c_str());
     strcpy(data.PWD, preferences.getString("PWD", "").c_str());
-=======
-    data.Port = preferences.getInt("Port", 1883);
-    strcpy(data.MQTTServer, preferences.getString("Server", "").c_str());
-    strcpy(data.MQTTTopic, preferences.getString("Topic", "").c_str());
->>>>>>> c82a90a0c2799eca4d758472ffcba201160e153b
 
     MotorDriver[0]->AutoClose = data.ac[0];
     MotorDriver[1]->AutoClose = data.ac[1];
@@ -396,7 +380,6 @@ void action()
         ui.clickBool("ac2", data.ac[1]);
         ui.clickBool("ac3", data.ac[2]);
 
-<<<<<<< HEAD
         ui.clickStr("SSID", data.SSID);
         ui.clickStr("PWD", data.PWD);
         
@@ -431,7 +414,6 @@ void action()
         MotorDriver[0]->AutoOpen = data.ao[0];
         MotorDriver[1]->AutoOpen = data.ao[1];
         MotorDriver[2]->AutoOpen = data.ao[2];
-=======
         ui.clickStr("MQTTServer", data.MQTTServer);
         ui.clickStr("MQTTTopic", data.MQTTTopic);
         ui.clickInt("MQTTPort", data.Port);
@@ -469,7 +451,6 @@ void action()
             MotorDriver[1]->AutoOpen = data.ao[1];
             MotorDriver[2]->AutoOpen = data.ao[2];
         }
->>>>>>> c82a90a0c2799eca4d758472ffcba201160e153b
 
         if (ui.click("RebootBtn"))
             ESP.restart();
@@ -505,11 +486,8 @@ void action()
 
 void Init()
 {
-<<<<<<< HEAD
     Serial.begin(57600);
-=======
 
->>>>>>> c82a90a0c2799eca4d758472ffcba201160e153b
     ArduinoOTA.onProgress(OnOTAProgress);
     App = new TApplication();
     App->Run();
