@@ -158,6 +158,7 @@ public:
 		WiFi.begin();
 		WiFiManager wifiManager;
 		wifiManager.setDebugOutput(false);
+		wifiManager.setConfigPortalTimeout(30);
 		wifiManager.autoConnect("AutoConnectAP");
 
 		ArduinoOTA.setPort(8266);
