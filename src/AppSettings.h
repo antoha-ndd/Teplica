@@ -24,15 +24,33 @@ TButton *BtnClose[3];
 TMotorDriver *MotorDriver[3];
 // ConfigWebServer configServer(80);
 
+
+
+
 struct Data
 {
-    int Port;
-    char MQTTServer[100];
-    char MQTTTopic[100];
+    char SSID[100];
+    char PWD[100];
     float o[3], c[3];
     bool ac[3], ao[3];
 };
 Data data;
+
+void setupWiFi()
+{
+
+    WiFiManager wm; // Создаем объект WiFiManager
+
+    wm.setConnectTimeout(30);       // Таймаут подключения 30 секунд
+    wm.setConfigPortalTimeout(180); // Автоматическое закрытие портала через 180 секунд
+
+    // Запускаем режим конфигурации
+    if (!wm.startConfigPortal("AutoconnectAP"))
+    {                  // Задаем имя AP
+        ESP.restart(); // Перезагрузка в случае неудачи
+        delay(1000);
+    }
+}
 
 void OnOTAProgress(unsigned int Progress, unsigned int Total)
 {
@@ -65,6 +83,21 @@ void BtnOpen1_Click(TButton *Button)
 
     MotorDriver[0]->Open();
 };
+
+void Btn1_DblClick(TButton *Button)
+{
+
+    WiFiManager wm;
+
+    LCD->clearDisplay();
+    LCD->setCursor(1, 5);
+    LCD->setTextSize(1);
+    LCD->print("Start AP");
+    LCD->setCursor(1, 15);
+    LCD->print("AutoConnectAP");
+    LCD->display();
+    setupWiFi();
+}
 
 void BtnClose1_Click(TButton *Button)
 {
@@ -127,17 +160,34 @@ void BtnClose3_Click(TButton *Button)
 void Timer1_Timeout(TTimer *Timer)
 {
 
+    static bool NetInfo{false};
     App->PrintLn(String(bmp->Temperature(true)));
 
-    LCD->clearDisplay();
-    LCD->setCursor(20, 5);
-    LCD->setTextSize(3);
-    LCD->print(String(bmp->Temperature()).c_str());
-    LCD->display();
+    if (NetInfo)
+    {
+        LCD->clearDisplay();
+        LCD->setCursor(1, 1);
+        LCD->setTextSize(1);
+        LCD->println(String("SSID : " + WiFi.SSID()).c_str());
+        LCD->println(String("RSSI : " + String(WiFi.RSSI())).c_str());
+        LCD->println(String("IP : " + WiFi.localIP().toString()).c_str());
+        LCD->println(String("Connected : " + String(WiFi.isConnected())).c_str());
+        LCD->display();
+    }
+    else
+    {
+        LCD->clearDisplay();
+        LCD->setCursor(20, 5);
+        LCD->setTextSize(3);
+        LCD->print(String(bmp->Temperature()).c_str());
+        LCD->display();
+    }
+    NetInfo = !NetInfo;
 };
 
 void Timer2_Timeout(TTimer *Timer)
 {
+
     float temp = bmp->Temperature(true);
 
     for (int i = 0; i < 3; i++)
@@ -150,7 +200,10 @@ void Timer2_Timeout(TTimer *Timer)
     }
 }
 
-void LoadSettings(){
+void LoadSettings()
+{
+    WiFiManager wm; // Создаем объект WiFiManager
+
     preferences.begin("config", false);
 
     data.c[0] = preferences.getFloat("c1", 0);
@@ -168,10 +221,9 @@ void LoadSettings(){
     data.ao[1] = preferences.getBool("ao2", false);
     data.ao[2] = preferences.getBool("ao3", false);
 
-    data.Port = preferences.getInt("Port", 1883);
-    strcpy(data.MQTTServer, preferences.getString("Server", "").c_str());
-    strcpy(data.MQTTTopic, preferences.getString("Topic", "").c_str());
-
+    
+    strcpy(data.SSID, preferences.getString("SSID", "").c_str());
+    strcpy(data.PWD, preferences.getString("PWD", "").c_str());
 
     MotorDriver[0]->AutoClose = data.ac[0];
     MotorDriver[1]->AutoClose = data.ac[1];
@@ -181,26 +233,31 @@ void LoadSettings(){
     MotorDriver[1]->AutoOpen = data.ao[1];
     MotorDriver[2]->AutoOpen = data.ao[2];
 
+    strcpy(data.SSID , wm.getWiFiSSID().c_str());
+    strcpy(data.PWD , wm.getWiFiPass().c_str());
+
     preferences.end();
 }
 
 void build()
 {
 
+
     LoadSettings();
 
     GP.BUILD_BEGIN(GP_DARK, 500);
-
+    GP_MAKE_BOX(
     GP.LABEL("Температура : " + String(bmp->Temperature(true)));
+    GP.LABEL("RSSI : " + String( WiFi.RSSI())););
     GP.BREAK();
 
-    GP.BUTTON("SaveBtn", "Сохранить");
+   // GP.BUTTON("SaveBtn", "Сохранить");
 
-    GP_MAKE_BLOCK_TAB("Окно 1",
+    GP_MAKE_BLOCK_TAB("Окно ближнее",
 
                       GP_MAKE_BOX(
                           GP.LABEL("Открыто");
-                          GP.SWITCH("", true, GP_GREEN, true););
+                          GP.SWITCH("op1", MotorDriver[0]->IsOpen(), GP_GREEN, true););
 
                       GP_MAKE_BOX(
                           GP_MAKE_BOX(
@@ -229,7 +286,11 @@ void build()
 
     );
 
-    GP_MAKE_BLOCK_TAB("Окно 2",
+    GP_MAKE_BLOCK_TAB("Окно дальнее (у бочки)",
+
+                      GP_MAKE_BOX(
+                          GP.LABEL("Открыто");
+                          GP.SWITCH("op2", MotorDriver[1]->IsOpen(), GP_GREEN, true););
 
                       GP_MAKE_BOX(
                           GP_MAKE_BOX(
@@ -253,7 +314,12 @@ void build()
                           GP.BUTTON("Open2", "Открыть");
                           GP.BUTTON("Close2", "Закрыть");););
 
-    GP_MAKE_BLOCK_TAB("Дверь",
+    GP_MAKE_BLOCK_TAB("Дверь дальння (на дорогу)",
+
+                      GP_MAKE_BOX(
+                          GP.LABEL("Открыто");
+                          GP.SWITCH("op3", MotorDriver[2]->IsOpen(), GP_GREEN, true););
+
                       GP_MAKE_BOX(
                           GP_MAKE_BOX(
                               GP.LABEL("Закрытие");
@@ -276,24 +342,22 @@ void build()
 
     );
 
-    GP_MAKE_BLOCK_TAB("MQTT",
+    GP_MAKE_BLOCK_TAB("WI-FI",
                       GP_MAKE_BOX(
-                          GP.LABEL("Cервер");
-                          GP.TEXT("MQTTServer", "", data.MQTTServer););
+                          GP.LABEL("Имя сети");
+                          GP.TEXT("SSID", "", data.SSID););
 
+            
                       GP_MAKE_BOX(
-                          GP.LABEL("Порт");
-                          GP.NUMBER("MQTTPort", "", data.Port));
-
-                      GP_MAKE_BOX(
-                          GP.LABEL("Топик");
-                          GP.TEXT("MQTTTopic", "", data.MQTTTopic);););
+                          GP.LABEL("Пароль");
+                          GP.TEXT("PWD", "", data.PWD););
+                        
+                          GP.BUTTON("ApplyWiFi", "Применить");
+                        );
 
     GP.BUTTON("RebootBtn", "Перезагрузить");
 
     GP.BUILD_END();
-
-
 }
 
 void action()
@@ -316,49 +380,49 @@ void action()
         ui.clickBool("ac2", data.ac[1]);
         ui.clickBool("ac3", data.ac[2]);
 
-        ui.clickStr("MQTTServer", data.MQTTServer);
-        ui.clickStr("MQTTTopic", data.MQTTTopic);
-        ui.clickInt("MQTTPort", data.Port);
-
-        if (ui.click("SaveBtn"))
-        {
-
-            preferences.begin("config", false);
-            preferences.putFloat("c1", data.c[0]);
-            preferences.putFloat("c2", data.c[1]);
-            preferences.putFloat("c3", data.c[2]);
-            preferences.putFloat("o1", data.o[0]);
-            preferences.putFloat("o2", data.o[1]);
-            preferences.putFloat("o3", data.o[2]);
-
-            preferences.putBool("ac1", data.ac[0]);
-            preferences.putBool("ac2", data.ac[1]);
-            preferences.putBool("ac3", data.ac[2]);
-
-            preferences.putBool("ao1", data.ao[0]);
-            preferences.putBool("ao2", data.ao[1]);
-            preferences.putBool("ao3", data.ao[2]);
-
-            preferences.putInt("Port", data.Port);
-            preferences.putString("Server", data.MQTTServer);
-            preferences.putString("Topic", data.MQTTTopic);
-
-            preferences.end();
-
-            MotorDriver[0]->AutoClose = data.ac[0];
-            MotorDriver[1]->AutoClose = data.ac[1];
-            MotorDriver[2]->AutoClose = data.ac[2];
+        ui.clickStr("SSID", data.SSID);
+        ui.clickStr("PWD", data.PWD);
         
-            MotorDriver[0]->AutoOpen = data.ao[0];
-            MotorDriver[1]->AutoOpen = data.ao[1];
-            MotorDriver[2]->AutoOpen = data.ao[2];
-        }
+
+        preferences.begin("config", false);
+        preferences.putFloat("c1", data.c[0]);
+        preferences.putFloat("c2", data.c[1]);
+        preferences.putFloat("c3", data.c[2]);
+
+        preferences.putFloat("o1", data.o[0]);
+        preferences.putFloat("o2", data.o[1]);
+        preferences.putFloat("o3", data.o[2]);
+
+        preferences.putBool("ac1", data.ac[0]);
+        preferences.putBool("ac2", data.ac[1]);
+        preferences.putBool("ac3", data.ac[2]);
+
+        preferences.putBool("ao1", data.ao[0]);
+        preferences.putBool("ao2", data.ao[1]);
+        preferences.putBool("ao3", data.ao[2]);
+
+
+        preferences.putString("SSID", data.SSID);
+        preferences.putString("PWD", data.PWD);
+
+        preferences.end();
+
+        MotorDriver[0]->AutoClose = data.ac[0];
+        MotorDriver[1]->AutoClose = data.ac[1];
+        MotorDriver[2]->AutoClose = data.ac[2];
+
+        MotorDriver[0]->AutoOpen = data.ao[0];
+        MotorDriver[1]->AutoOpen = data.ao[1];
+        MotorDriver[2]->AutoOpen = data.ao[2];
 
         if (ui.click("RebootBtn"))
             ESP.restart();
 
         if (ui.click("Open1"))
+        {
             MotorDriver[0]->Open();
+            data.ac[0] = false;
+        }
 
         if (ui.click("Open2"))
             MotorDriver[1]->Open();
@@ -374,12 +438,18 @@ void action()
 
         if (ui.click("Close3"))
             MotorDriver[2]->Close();
+        
+        if (ui.click("ApplyWiFi")){
+           
+
+        }
+            
     }
 }
 
 void Init()
 {
-    
+    Serial.begin(57600);
     ArduinoOTA.onProgress(OnOTAProgress);
     App = new TApplication();
     App->Run();
@@ -407,6 +477,7 @@ void Init()
 
     BtnOpen[0] = new TButton(NULL, 5, false);
     BtnOpen[0]->OnPress = BtnOpen1_Click;
+    BtnOpen[0]->OnDoubleClick = Btn1_DblClick;
     BtnOpen[0]->Register(App);
 
     BtnOpen[1] = new TButton(NULL, 4, false);
@@ -453,7 +524,6 @@ void Init()
     ui.start();
     ui.attachBuild(build);
     ui.attach(action);
-
 
     LoadSettings();
 }

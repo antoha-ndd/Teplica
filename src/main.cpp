@@ -10,7 +10,6 @@ void setup()
 
 void loop()
 {
-
   App->Idle();
   ui.tick();
 }
