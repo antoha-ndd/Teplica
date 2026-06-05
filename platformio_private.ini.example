@@ -1,0 +1,10 @@
+; Скопируйте в platformio_private.ini (файл в .gitignore).
+; OTA-пароль задаётся здесь для загрузки и/или в NVS (ключ ota_pass).
+
+[env:teplica]
+upload_flags =
+	--port=8266
+	--auth=YOUR_OTA_PASSWORD
+
+build_flags =
+	-DOTA_DEFAULT_PASSWORD=\"YOUR_OTA_PASSWORD\"

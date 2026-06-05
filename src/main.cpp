@@ -1,15 +1,17 @@
 
 #include <Arduino.h>
+#include <SettingsGyver.h>
+#include "var.h"
+#include "webui.h"
 #include "AppSettings.h"
 
 void setup()
 {
-  
-  Init();
+    Init();
 }
 
 void loop()
 {
-  App->Idle();
-  ui.tick();
+    App->Idle();
+    ui->tick();
 }
