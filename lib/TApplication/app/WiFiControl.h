@@ -158,6 +158,7 @@ private:
 			WiFi.softAPConfig(ap_ip, ap_gw, ap_mask);
 
 		delay(100);
+		TryStartOTA();
 
 		if (WiFiApStarted)
 		{
@@ -227,6 +228,7 @@ private:
 				LogWiFiConnected();
 			}
 			WiFiStaConnected = true;
+			TryStartOTA();
 			return;
 		}
 
@@ -263,10 +265,21 @@ private:
 		OTAStarted = true;
 	}
 
+	void TryStartOTA()
+	{
+		if (OTAStarted)
+			return;
+
+		if (WiFiApStarted || WiFi.status() == WL_CONNECTED)
+			StartOTA();
+	}
+
 	void HandleOTA()
 	{
+		TryStartOTA();
+
 		if (!OTAStarted)
-			StartOTA();
+			return;
 
 		ArduinoOTA.handle();
 	}
@@ -276,7 +289,6 @@ public:
 	{
 		LastHeartbeatTime = millis() - APP_HEARTBEAT_INTERVAL;
 		BeginWiFi();
-		StartOTA();
 	}
 
 	IPAddress SoftAPIP()
@@ -309,7 +321,7 @@ public:
 		WiFi.disconnect(false);
 		WiFi.begin(WifiStaSsid.c_str(), WifiStaPass.c_str());
 		EnsureSoftAP();
-		StartOTA();
+		TryStartOTA();
 	}
 
 	virtual void Idle()

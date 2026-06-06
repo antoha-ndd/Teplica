@@ -79,7 +79,7 @@ private:
 public:
 	int MQTT_Timeout{5000};
 
-	TMQTTControl() : TControl(NULL) {}
+	TMQTTControl() : TControl(NULL), mqtt(MQTTClient) {}
 
 	virtual ~TMQTTControl()
 	{
@@ -88,7 +88,8 @@ public:
 
 	void InitMQTT(String Server, int Port, String Topic)
 	{
-		mqtt.disconnect();
+		if (MQTT_Intialized)
+			mqtt.disconnect();
 		MQTT_Server = Server;
 		MQTT_Port = Port;
 		if (Topic.length() == 0)
@@ -106,7 +107,8 @@ public:
 
 	void MqttShutdown()
 	{
-		mqtt.disconnect();
+		if (MQTT_Intialized)
+			mqtt.disconnect();
 		MQTT_Intialized = false;
 		if (Instance() == this)
 			Instance() = NULL;

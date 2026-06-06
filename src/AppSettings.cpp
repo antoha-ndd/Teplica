@@ -40,12 +40,10 @@ void Init()
     Timer1 = new TTimer();
     Timer1->OnTimeout = Timer1_Timeout;
     Timer1->Register(App);
-    Timer1->Start(5000);
 
     Timer2 = new TTimer();
     Timer2->OnTimeout = Timer2_Timeout;
     Timer2->Register(App);
-    Timer2->Start(1000);
 
     BtnOpen[0] = new TButton(PIN_BTN_OPEN_0, false);
     BtnOpen[0]->OnClick = BtnOpen0_Click;
@@ -87,4 +85,7 @@ void Init()
     LoadSettings();
     InitMqtt();
     InitWebUi();
+
+    Timer1->Start(5000);
+    Timer2->Start(1000);
 }

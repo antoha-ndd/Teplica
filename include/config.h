@@ -6,11 +6,14 @@
 
 constexpr int MOTOR_COUNT = 3;
 constexpr size_t WIFI_FIELD_SIZE = 100;
+constexpr size_t MQTT_FIELD_SIZE = 64;
 constexpr float TEMP_HYSTERESIS = 0.5f;
+constexpr float DEFAULT_TEMP_OPEN = 21.0f;
+constexpr float DEFAULT_TEMP_CLOSE = 20.0f;
 
-constexpr char MQTT_HOST[] = "192.168.0.51";
-constexpr uint16_t MQTT_PORT = 1883;
-constexpr char MQTT_TOPIC[] = "teplica";
+constexpr char DEFAULT_MQTT_HOST[] = "192.168.0.51";
+constexpr uint16_t DEFAULT_MQTT_PORT = 1883;
+constexpr char DEFAULT_MQTT_TOPIC[] = "teplica";
 
 namespace uiid
 {
@@ -48,6 +51,11 @@ namespace uiid
         SSID,
         PWD,
         ApplyWiFi,
+        MqttHost,
+        MqttPort,
+        MqttTopic,
+        MqttStatus,
+        ApplyMqtt,
         Reboot,
     };
 }

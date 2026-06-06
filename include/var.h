@@ -37,6 +37,9 @@ struct Data
 {
     char SSID[WIFI_FIELD_SIZE];
     char PWD[WIFI_FIELD_SIZE];
+    char mqttHost[MQTT_FIELD_SIZE];
+    char mqttTopic[MQTT_FIELD_SIZE];
+    uint16_t mqttPort;
     float o[MOTOR_COUNT];
     float c[MOTOR_COUNT];
     bool ac[MOTOR_COUNT];

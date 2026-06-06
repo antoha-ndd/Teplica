@@ -7,6 +7,7 @@ void SaveSettings();
 void NormalizeThresholds();
 void ApplyMotorAutoFlags();
 void SaveWiFiSettings();
+void SaveMqttSettings();
 void ManualOpen(int index);
 void ManualClose(int index);
 void PauseAutoControl(int index);

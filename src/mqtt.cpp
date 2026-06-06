@@ -17,7 +17,7 @@ static bool payloadTrue(const String &payload)
 
 static bool stripTopicPrefix(String &topic)
 {
-    String prefix = String(MQTT_TOPIC) + "/";
+    String prefix = String(data.mqttTopic) + "/";
     if (!topic.startsWith(prefix))
         return false;
 
@@ -42,7 +42,33 @@ void InitMqtt()
     MQTTCtrl = new TMQTTControl();
     MQTTCtrl->MQTT_Timeout = 3000;
     MQTTCtrl->Register(App);
-    MQTTCtrl->InitMQTT(MQTT_HOST, MQTT_PORT, MQTT_TOPIC);
+    ApplyMqttSettings();
+}
+
+void ApplyMqttSettings()
+{
+    if (!MQTTCtrl)
+        return;
+
+    String topic = data.mqttTopic;
+    if (topic.length() == 0)
+        topic = DEFAULT_MQTT_TOPIC;
+
+    MQTTCtrl->InitMQTT(String(data.mqttHost), data.mqttPort, topic);
+}
+
+String GetMqttStatusText()
+{
+    if (!MQTTCtrl)
+        return "-";
+
+    if (MQTTCtrl->IsMQTTConnected())
+        return "подключён";
+
+    if (WiFi.isConnected())
+        return "нет связи";
+
+    return "ожидание WiFi";
 }
 
 void MqttPublishMotor(int index)
@@ -77,7 +103,8 @@ void MqttPublishTelemetry()
     if (!MQTTCtrl || !MQTTCtrl->IsMQTTConnected())
         return;
 
-    MQTTCtrl->PublishUnderTopic("temperature", String(bmp->Temperature(true), 2), true);
+    if (bmp->IsOk())
+        MQTTCtrl->PublishUnderTopic("temperature", String(bmp->Temperature(true), 2), true);
     MQTTCtrl->PublishUnderTopic("rssi", String(WiFi.RSSI()), true);
     MQTTCtrl->PublishUnderTopic("wifi/connected", WiFi.isConnected() ? "1" : "0", true);
 }

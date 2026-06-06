@@ -81,7 +81,11 @@ void Timer1_Timeout(TTimer *Timer)
 {
     (void)Timer;
     static bool NetInfo{false};
-    Serial.println(String(bmp->Temperature(true)));
+
+    if (bmp->IsOk())
+        Serial.println(String(bmp->Temperature(true)));
+    else
+        Serial.println(F("BMP ERR"));
 
     if (NetInfo)
     {
@@ -99,7 +103,10 @@ void Timer1_Timeout(TTimer *Timer)
         LCD->clearDisplay();
         LCD->setCursor(20, 5);
         LCD->setTextSize(3);
-        LCD->print(String(bmp->Temperature()).c_str());
+        if (bmp->IsOk())
+            LCD->print(String(bmp->Temperature()).c_str());
+        else
+            LCD->print(F("ERR"));
         LCD->display();
     }
     NetInfo = !NetInfo;
@@ -111,8 +118,8 @@ void Timer2_Timeout(TTimer *Timer)
 
     TickAutoRestore();
 
-    float temp = bmp->Temperature(true);
-    ProcessMotorAutomation(temp);
+    if (bmp->IsOk())
+        ProcessMotorAutomation(bmp->Temperature(true));
 
     MqttPublishTelemetry();
     MqttPublishAllMotors();

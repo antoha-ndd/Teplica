@@ -50,8 +50,15 @@ void LoadSettings()
         String aoKey = "ao" + String(i + 1);
         String arKey = "ar" + String(i + 1);
 
-        data.c[i] = preferences.getFloat(closeKey.c_str(), 0);
-        data.o[i] = preferences.getFloat(openKey.c_str(), 0);
+        if (preferences.isKey(closeKey.c_str()))
+            data.c[i] = preferences.getFloat(closeKey.c_str(), DEFAULT_TEMP_CLOSE);
+        else
+            data.c[i] = DEFAULT_TEMP_CLOSE;
+
+        if (preferences.isKey(openKey.c_str()))
+            data.o[i] = preferences.getFloat(openKey.c_str(), DEFAULT_TEMP_OPEN);
+        else
+            data.o[i] = DEFAULT_TEMP_OPEN;
         data.ac[i] = preferences.getBool(acKey.c_str(), false);
         data.ao[i] = preferences.getBool(aoKey.c_str(), false);
         data.ar[i] = (uint16_t)preferences.getUInt(arKey.c_str(), 0);
@@ -67,6 +74,18 @@ void LoadSettings()
 
     CopyStringField(data.SSID, WIFI_FIELD_SIZE, ssid);
     CopyStringField(data.PWD, WIFI_FIELD_SIZE, pwd);
+
+    String mqttHost = preferences.getString("mqtt_host", "");
+    if (mqttHost.length() == 0)
+        mqttHost = DEFAULT_MQTT_HOST;
+
+    String mqttTopic = preferences.getString("mqtt_topic", "");
+    if (mqttTopic.length() == 0)
+        mqttTopic = DEFAULT_MQTT_TOPIC;
+
+    CopyStringField(data.mqttHost, MQTT_FIELD_SIZE, mqttHost);
+    CopyStringField(data.mqttTopic, MQTT_FIELD_SIZE, mqttTopic);
+    data.mqttPort = (uint16_t)preferences.getUInt("mqtt_port", DEFAULT_MQTT_PORT);
 
     preferences.end();
 
@@ -124,6 +143,20 @@ void SaveWiFiSettings()
     preferences.end();
 
     WiFiCtrl->ApplySettingsFromNvs();
+}
+
+void SaveMqttSettings()
+{
+    if (data.mqttPort == 0)
+        data.mqttPort = DEFAULT_MQTT_PORT;
+
+    preferences.begin("config", false);
+    preferences.putString("mqtt_host", data.mqttHost);
+    preferences.putUInt("mqtt_port", data.mqttPort);
+    preferences.putString("mqtt_topic", data.mqttTopic);
+    preferences.end();
+
+    ApplyMqttSettings();
 }
 
 void PauseAutoControl(int index)

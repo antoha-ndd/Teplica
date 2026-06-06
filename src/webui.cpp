@@ -8,6 +8,7 @@
 #include "settings.h"
 #include "MotorDriver.h"
 #include "bmp180.h"
+#include "mqtt.h"
 
 static SettingsGyver uiInstance("Teplica");
 SettingsGyver *ui = &uiInstance;
@@ -63,7 +64,8 @@ static void buildMotorMenu(sets::Builder &b, int index, const char *title,
 
 void buildUi(sets::Builder &b)
 {
-    b.LabelFloat(uiid::Temp, "Температура", bmp->Temperature(true));
+    b.LabelFloat(uiid::Temp, "Температура",
+                 bmp->IsOk() ? bmp->Temperature(true) : -999.0f);
     b.LabelNum(uiid::Rssi, "RSSI", WiFi.RSSI());
 
     buildMotorMenu(b, 0, "Окно ближнее",
@@ -89,6 +91,19 @@ void buildUi(sets::Builder &b)
         b.endMenu();
     }
 
+    if (b.beginMenu("MQTT"))
+    {
+        b.Input(uiid::MqttHost, "Брокер", AnyPtr(data.mqttHost, MQTT_FIELD_SIZE));
+        b.Number(uiid::MqttPort, "Порт", &data.mqttPort, 1, 65535);
+        b.Input(uiid::MqttTopic, "Топик", AnyPtr(data.mqttTopic, MQTT_FIELD_SIZE));
+        b.Label(uiid::MqttStatus, "Статус", GetMqttStatusText());
+
+        if (b.Button(uiid::ApplyMqtt, "Применить"))
+            SaveMqttSettings();
+
+        b.endMenu();
+    }
+
     if (b.Button(uiid::Reboot, "Перезагрузить", sets::Colors::Red))
         ESP.restart();
 
@@ -104,6 +119,7 @@ void buildUi(sets::Builder &b)
     case uiid::Close2:
     case uiid::Close3:
     case uiid::ApplyWiFi:
+    case uiid::ApplyMqtt:
     case uiid::Reboot:
         return;
     case uiid::Ao1:
@@ -126,8 +142,9 @@ void buildUi(sets::Builder &b)
 
 void updateUi(sets::Updater &upd)
 {
-    upd.update(uiid::Temp, bmp->Temperature(true));
+    upd.update(uiid::Temp, bmp->IsOk() ? bmp->Temperature(true) : -999.0f);
     upd.update(uiid::Rssi, WiFi.RSSI());
+    upd.update(uiid::MqttStatus, GetMqttStatusText());
     upd.update(uiid::Op1, MotorDriver[0]->IsOpen());
     upd.update(uiid::Op2, MotorDriver[1]->IsOpen());
     upd.update(uiid::Op3, MotorDriver[2]->IsOpen());
