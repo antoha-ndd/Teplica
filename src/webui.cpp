@@ -12,9 +12,27 @@
 static SettingsGyver uiInstance("Teplica");
 SettingsGyver *ui = &uiInstance;
 
+static int motorIndexFromAutoFlagId(size_t id)
+{
+    switch (id)
+    {
+    case uiid::Ao1:
+    case uiid::Ac1:
+        return 0;
+    case uiid::Ao2:
+    case uiid::Ac2:
+        return 1;
+    case uiid::Ao3:
+    case uiid::Ac3:
+        return 2;
+    default:
+        return -1;
+    }
+}
+
 static void buildMotorMenu(sets::Builder &b, int index, const char *title,
                            size_t opId, size_t cId, size_t oId,
-                           size_t aoId, size_t acId,
+                           size_t aoId, size_t acId, size_t arId, size_t arLeftId,
                            size_t openId, size_t closeId)
 {
     if (!b.beginMenu(title))
@@ -24,8 +42,10 @@ static void buildMotorMenu(sets::Builder &b, int index, const char *title,
          sets::Colors::Red, sets::Colors::Green);
     b.Number(cId, "Закрытие", &data.c[index]);
     b.Number(oId, "Открытие", &data.o[index]);
-    b.Switch(aoId, "Автооткрытие", &data.ao[index]);
-    b.Switch(acId, "Автозакрытие", &data.ac[index]);
+    b.Switch(aoId, "Автооткрытие", &MotorDriver[index]->AutoOpen);
+    b.Switch(acId, "Автозакрытие", &MotorDriver[index]->AutoClose);
+    b.Number(arId, "Восст. авто, мин", &data.ar[index], 0, 1440);
+    b.Label(arLeftId, "Осталось, мин", GetAutoRestoreStatusText(index));
 
     if (b.beginButtons())
     {
@@ -33,7 +53,7 @@ static void buildMotorMenu(sets::Builder &b, int index, const char *title,
             ManualOpen(index);
 
         if (b.Button(closeId, "Закрыть"))
-            MotorDriver[index]->Close();
+            ManualClose(index);
 
         b.endButtons();
     }
@@ -48,15 +68,15 @@ void buildUi(sets::Builder &b)
 
     buildMotorMenu(b, 0, "Окно ближнее",
                    uiid::Op1, uiid::C1, uiid::O1, uiid::Ao1, uiid::Ac1,
-                   uiid::Open1, uiid::Close1);
+                   uiid::Ar1, uiid::ArLeft1, uiid::Open1, uiid::Close1);
 
     buildMotorMenu(b, 1, "Окно дальнее (у бочки)",
                    uiid::Op2, uiid::C2, uiid::O2, uiid::Ao2, uiid::Ac2,
-                   uiid::Open2, uiid::Close2);
+                   uiid::Ar2, uiid::ArLeft2, uiid::Open2, uiid::Close2);
 
     buildMotorMenu(b, 2, "Дверь дальння (на дорогу)",
                    uiid::Op3, uiid::C3, uiid::O3, uiid::Ao3, uiid::Ac3,
-                   uiid::Open3, uiid::Close3);
+                   uiid::Ar3, uiid::ArLeft3, uiid::Open3, uiid::Close3);
 
     if (b.beginMenu("WI-FI"))
     {
@@ -86,6 +106,18 @@ void buildUi(sets::Builder &b)
     case uiid::ApplyWiFi:
     case uiid::Reboot:
         return;
+    case uiid::Ao1:
+    case uiid::Ao2:
+    case uiid::Ao3:
+    case uiid::Ac1:
+    case uiid::Ac2:
+    case uiid::Ac3:
+    {
+        int index = motorIndexFromAutoFlagId(b.build.id);
+        if (index >= 0)
+            ApplyAutoFlagsFromWeb(index);
+        return;
+    }
     default:
         SaveSettings();
         break;
@@ -99,6 +131,13 @@ void updateUi(sets::Updater &upd)
     upd.update(uiid::Op1, MotorDriver[0]->IsOpen());
     upd.update(uiid::Op2, MotorDriver[1]->IsOpen());
     upd.update(uiid::Op3, MotorDriver[2]->IsOpen());
+
+    for (int i = 0; i < MOTOR_COUNT; i++)
+    {
+        upd.update(uiid::Ao1 + i, MotorDriver[i]->AutoOpen);
+        upd.update(uiid::Ac1 + i, MotorDriver[i]->AutoClose);
+        upd.update(uiid::ArLeft1 + i, GetAutoRestoreStatusText(i));
+    }
 }
 
 void InitWebUi()

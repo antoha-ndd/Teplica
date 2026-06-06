@@ -7,8 +7,8 @@
 #include "Pairing.h"
 #include <Preferences.h>
 
-const char WIFI_FALLBACK_AP_SSID[] = "AutoConnectAP";
-const char WIFI_AP_PASSWORD_KEY[] = "ap_pass";
+//const char WIFI_FALLBACK_AP_SSID[] = "AutoConnectAP";
+//const char WIFI_AP_PASSWORD_KEY[] = "";
 const char WIFI_OTA_PASSWORD_KEY[] = "ota_pass";
 const TTimeStamp WIFI_RECONNECT_INTERVAL = 30000;
 const TTimeStamp APP_HEARTBEAT_INTERVAL = 10000;
@@ -41,13 +41,15 @@ static String GetPreferenceString(const char *key, const char *fallback = "")
 
 static String GetFallbackAPPassword()
 {
+	return "";
+	/*
 	String password = GetPreferenceString(WIFI_AP_PASSWORD_KEY);
 	if (password.length() >= 8)
 		return password;
 
 	String chipId = GetWiFiChipId();
 	chipId.toUpperCase();
-	return String("teplica-") + chipId;
+	return String("teplica-") + chipId;*/
 }
 
 static String GetOTAPassword()
@@ -65,7 +67,6 @@ private:
 	bool WiFiApStarted{false};
 	bool WiFiStaConnected{false};
 	bool OTAStarted{false};
-	bool OTADisabledLogged{false};
 	bool WifiUseSta{false};
 	String WifiStaSsid;
 	String WifiStaPass;
@@ -149,6 +150,8 @@ private:
 		IPAddress ap_gw(192, 168, 4, 1);
 		IPAddress ap_mask(255, 255, 255, 0);
 
+		String WIFI_FALLBACK_AP_SSID = "AP_"+GetWiFiChipId();
+		
 		String apPassword = GetFallbackAPPassword();
 		WiFiApStarted = WiFi.softAP(WIFI_FALLBACK_AP_SSID, apPassword.c_str());
 		if (WiFiApStarted)
@@ -244,53 +247,26 @@ private:
 		}
 	}
 
-	bool IsOTANetworkReady()
+	void StartOTA()
 	{
-		return WiFi.status() == WL_CONNECTED || WiFiApStarted;
-	}
+		if (OTAStarted)
+			return;
 
-	void LogOTAReady()
-	{
-		// Serial.print("[OTA] Ready, port=8266");
-		if (WiFi.status() == WL_CONNECTED)
-		{
-			// Serial.print(", sta=");
-			// Serial.print(WiFi.localIP());
-		}
-		if (WiFiApStarted)
-		{
-			// Serial.print(", ap=");
-			// Serial.print(WiFi.softAPIP());
-		}
-		// Serial.println();
+		ArduinoOTA.setPort(8266);
+		ArduinoOTA.setHostname("ESP_Board");
+
+		String otaPassword = GetOTAPassword();
+		if (otaPassword.length() > 0)
+			ArduinoOTA.setPassword(otaPassword.c_str());
+
+		ArduinoOTA.begin();
+		OTAStarted = true;
 	}
 
 	void HandleOTA()
 	{
-		if (!IsOTANetworkReady())
-			return;
-
 		if (!OTAStarted)
-		{
-			String otaPassword = GetOTAPassword();
-			if (otaPassword.length() == 0)
-			{
-				if (!OTADisabledLogged)
-				{
-					// Serial.println("[OTA] Disabled: set ota_pass in Preferences or OTA_DEFAULT_PASSWORD to enable OTA");
-					OTADisabledLogged = true;
-				}
-				return;
-			}
-
-			ArduinoOTA.setPort(8266);
-			ArduinoOTA.setHostname("ESP_Board");
-			ArduinoOTA.setPassword(otaPassword.c_str());
-			ArduinoOTA.begin();
-			OTAStarted = true;
-			OTADisabledLogged = false;
-			LogOTAReady();
-		}
+			StartOTA();
 
 		ArduinoOTA.handle();
 	}
@@ -300,6 +276,7 @@ public:
 	{
 		LastHeartbeatTime = millis() - APP_HEARTBEAT_INTERVAL;
 		BeginWiFi();
+		StartOTA();
 	}
 
 	IPAddress SoftAPIP()
@@ -310,7 +287,6 @@ public:
 	void ApplySettingsFromNvs()
 	{
 		OTAStarted = false;
-		OTADisabledLogged = false;
 		WiFiStaConnected = false;
 		WiFiLastReconnectAttempt = millis();
 		LoadWiFiSettings();
@@ -333,6 +309,7 @@ public:
 		WiFi.disconnect(false);
 		WiFi.begin(WifiStaSsid.c_str(), WifiStaPass.c_str());
 		EnsureSoftAP();
+		StartOTA();
 	}
 
 	virtual void Idle()

@@ -12,6 +12,7 @@
 #include "bmp180.h"
 #include "ssd1306.h"
 #include "app/WiFiControl.h"
+#include "mqtt.h"
 
 void Init()
 {
@@ -84,5 +85,6 @@ void Init()
     MotorDriver[2]->InitClose();
 
     LoadSettings();
+    InitMqtt();
     InitWebUi();
 }

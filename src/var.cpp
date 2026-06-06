@@ -17,6 +17,7 @@ Preferences preferences;
 
 TApplication *App;
 TWiFiControl *WiFiCtrl;
+TMQTTControl *MQTTCtrl;
 TBMP180 *bmp;
 TTimer *Timer1;
 TTimer *Timer2;
@@ -26,3 +27,5 @@ TButton *BtnClose[MOTOR_COUNT];
 TMotorDriver *MotorDriver[MOTOR_COUNT];
 
 Data data;
+unsigned long autoRestoreAt[MOTOR_COUNT]{0};
+bool autoPaused[MOTOR_COUNT]{false};

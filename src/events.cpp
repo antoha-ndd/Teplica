@@ -5,6 +5,7 @@
 #include "var.h"
 #include "events.h"
 #include "settings.h"
+#include "mqtt.h"
 #include "bmp180.h"
 #include "button.h"
 #include "MotorDriver.h"
@@ -32,7 +33,7 @@ static void BtnClose_Click(int index, TButton *Button)
 {
     (void)Button;
     ShowMotorLabel("Close", index);
-    MotorDriver[index]->Close();
+    ManualClose(index);
 }
 
 void OnOTAProgress(unsigned int Progress, unsigned int Total)
@@ -107,14 +108,12 @@ void Timer1_Timeout(TTimer *Timer)
 void Timer2_Timeout(TTimer *Timer)
 {
     (void)Timer;
+
+    TickAutoRestore();
+
     float temp = bmp->Temperature(true);
+    ProcessMotorAutomation(temp);
 
-    for (int i = 0; i < MOTOR_COUNT; i++)
-    {
-        if (MotorDriver[i]->AutoOpen && temp > data.o[i] + TEMP_HYSTERESIS)
-            MotorDriver[i]->Open();
-
-        if (MotorDriver[i]->AutoClose && temp < data.c[i] - TEMP_HYSTERESIS)
-            MotorDriver[i]->Close();
-    }
+    MqttPublishTelemetry();
+    MqttPublishAllMotors();
 }

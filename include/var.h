@@ -14,6 +14,7 @@ class TTimer;
 class TSSD1306;
 class TButton;
 class TMotorDriver;
+class TMQTTControl;
 
 unsigned long GetTimerValueImpl();
 extern TTimerValueCallback GetTimerValue;
@@ -23,6 +24,7 @@ extern Preferences preferences;
 
 extern TApplication *App;
 extern TWiFiControl *WiFiCtrl;
+extern TMQTTControl *MQTTCtrl;
 extern TBMP180 *bmp;
 extern TTimer *Timer1;
 extern TTimer *Timer2;
@@ -39,6 +41,9 @@ struct Data
     float c[MOTOR_COUNT];
     bool ac[MOTOR_COUNT];
     bool ao[MOTOR_COUNT];
+    uint16_t ar[MOTOR_COUNT];
 };
 
 extern Data data;
+extern unsigned long autoRestoreAt[MOTOR_COUNT];
+extern bool autoPaused[MOTOR_COUNT];

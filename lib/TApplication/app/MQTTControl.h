@@ -96,7 +96,7 @@ public:
 		MQTT_Topic = Topic;
 
 		mqtt.setClient(MQTTClient);
-		if (!mqtt.setBufferSize(512, 512))
+		if (!mqtt.setBufferSize(512))
 			; // Serial.println("[MQTT] buffer allocation failed");
 		mqtt.setServer(MQTT_Server.c_str(), MQTT_Port);
 		mqtt.setCallback(MQTT_callback);

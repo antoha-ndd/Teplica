@@ -8,6 +8,10 @@ constexpr int MOTOR_COUNT = 3;
 constexpr size_t WIFI_FIELD_SIZE = 100;
 constexpr float TEMP_HYSTERESIS = 0.5f;
 
+constexpr char MQTT_HOST[] = "192.168.0.51";
+constexpr uint16_t MQTT_PORT = 1883;
+constexpr char MQTT_TOPIC[] = "teplica";
+
 namespace uiid
 {
     enum : size_t
@@ -29,6 +33,12 @@ namespace uiid
         Ac1,
         Ac2,
         Ac3,
+        Ar1,
+        Ar2,
+        Ar3,
+        ArLeft1,
+        ArLeft2,
+        ArLeft3,
         Open1,
         Open2,
         Open3,
