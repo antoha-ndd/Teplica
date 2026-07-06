@@ -60,6 +60,18 @@ public:
         return State;
     }
 
+    bool IsBusy() const
+    {
+        return TimeStamp != 0;
+    }
+
+    void Stop()
+    {
+        TimeStamp = 0;
+        digitalWrite(OpenPin, LOW);
+        digitalWrite(ClosePin, LOW);
+    }
+
     void Close()
     {
         if (!State)

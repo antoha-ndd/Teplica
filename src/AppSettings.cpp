@@ -26,6 +26,8 @@ void Init()
 
     LCD = new TSSD1306();
     ArduinoOTA.onProgress(OnOTAProgress);
+    ArduinoOTA.onStart([]() { PauseMotorsForOta(); });
+    ArduinoOTA.onEnd([]() { ResumeMotorsAfterOta(); });
 
     LCD->clearDisplay();
     LCD->setCursor(20, 5);
@@ -78,9 +80,7 @@ void Init()
     MotorDriver[1]->Register(App);
     MotorDriver[2]->Register(App);
 
-    MotorDriver[0]->InitClose();
-    MotorDriver[1]->InitClose();
-    MotorDriver[2]->InitClose();
+    InitCloseAllMotors();
 
     LoadSettings();
     InitMqtt();

@@ -222,12 +222,221 @@ String GetAutoRestoreStatusText(int index)
     return String((msLeft + 59999UL) / 60000UL);
 }
 
+static bool IsCloseAction(MotorAction action)
+{
+    return action == MotorAction::Close || action == MotorAction::InitClose;
+}
+
+static bool IsSameDirection(MotorAction a, MotorAction b)
+{
+    if (a == b)
+        return true;
+
+    return IsCloseAction(a) && IsCloseAction(b);
+}
+
+static bool motorOtaPaused{false};
+
+static void ClearActiveMotor()
+{
+    activeMotorIndex = -1;
+    activeMotorAction = MotorAction::None;
+}
+
+static int FindQueueEntryForMotor(int index)
+{
+    for (int i = 0; i < motorQueueCount; i++)
+    {
+        if (motorQueue[i].index == index)
+            return i;
+    }
+
+    return -1;
+}
+
+static void RemoveQueueEntryForMotor(int index)
+{
+    for (int i = 0; i < motorQueueCount;)
+    {
+        if (motorQueue[i].index == index)
+        {
+            for (int j = i; j < motorQueueCount - 1; j++)
+                motorQueue[j] = motorQueue[j + 1];
+
+            motorQueueCount--;
+        }
+        else
+        {
+            i++;
+        }
+    }
+}
+
+static void PopQueueFront()
+{
+    if (motorQueueCount <= 0)
+        return;
+
+    for (int i = 0; i < motorQueueCount - 1; i++)
+        motorQueue[i] = motorQueue[i + 1];
+
+    motorQueueCount--;
+}
+
+static bool ExecuteMotorAction(int index, MotorAction action)
+{
+    if (index < 0 || index >= MOTOR_COUNT || action == MotorAction::None)
+        return false;
+
+    activeMotorIndex = index;
+    activeMotorAction = action;
+
+    if (action == MotorAction::Open)
+    {
+        if (MotorDriver[index]->IsOpen())
+        {
+            ClearActiveMotor();
+            return false;
+        }
+
+        MotorDriver[index]->Open();
+    }
+    else if (action == MotorAction::InitClose)
+    {
+        MotorDriver[index]->InitClose();
+    }
+    else
+    {
+        if (!MotorDriver[index]->IsOpen())
+        {
+            ClearActiveMotor();
+            return false;
+        }
+
+        MotorDriver[index]->Close();
+    }
+
+    if (!MotorDriver[index]->IsBusy())
+    {
+        ClearActiveMotor();
+        return false;
+    }
+
+    MqttPublishMotor(index);
+    return true;
+}
+
+static void EnqueueMotorAction(int index, MotorAction action)
+{
+    if (motorQueueCount >= MOTOR_COUNT)
+        return;
+
+    motorQueue[motorQueueCount].index = (int8_t)index;
+    motorQueue[motorQueueCount].action = action;
+    motorQueueCount++;
+}
+
+static void RequestMotorAction(int index, MotorAction action)
+{
+    if (motorOtaPaused)
+        return;
+
+    if (index < 0 || index >= MOTOR_COUNT || action == MotorAction::None)
+        return;
+
+    if (activeMotorIndex == index)
+    {
+        if (IsSameDirection(activeMotorAction, action))
+            return;
+
+        MotorDriver[index]->Stop();
+        ClearActiveMotor();
+        ExecuteMotorAction(index, action);
+        return;
+    }
+
+    const int queueIndex = FindQueueEntryForMotor(index);
+    if (queueIndex >= 0)
+    {
+        if (IsSameDirection(motorQueue[queueIndex].action, action))
+            return;
+
+        RemoveQueueEntryForMotor(index);
+    }
+
+    if (activeMotorIndex < 0)
+    {
+        ExecuteMotorAction(index, action);
+        return;
+    }
+
+    EnqueueMotorAction(index, action);
+}
+
+void RequestMotorOpen(int index)
+{
+    RequestMotorAction(index, MotorAction::Open);
+}
+
+void RequestMotorClose(int index)
+{
+    RequestMotorAction(index, MotorAction::Close);
+}
+
+void InitCloseAllMotors()
+{
+    for (int i = 0; i < MOTOR_COUNT; i++)
+        RequestMotorAction(i, MotorAction::InitClose);
+}
+
+void PauseMotorsForOta()
+{
+    motorOtaPaused = true;
+
+    if (activeMotorIndex >= 0)
+    {
+        MotorDriver[activeMotorIndex]->Stop();
+        ClearActiveMotor();
+    }
+
+    motorQueueCount = 0;
+}
+
+void ResumeMotorsAfterOta()
+{
+    motorOtaPaused = false;
+}
+
+void ProcessMotorQueue()
+{
+    if (motorOtaPaused)
+        return;
+
+    if (activeMotorIndex >= 0)
+    {
+        if (MotorDriver[activeMotorIndex]->IsBusy())
+            return;
+
+        ClearActiveMotor();
+    }
+
+    while (motorQueueCount > 0)
+    {
+        const int index = motorQueue[0].index;
+        const MotorAction action = motorQueue[0].action;
+        PopQueueFront();
+
+        if (ExecuteMotorAction(index, action))
+            return;
+    }
+}
+
 void ManualOpen(int index)
 {
     if (index < 0 || index >= MOTOR_COUNT)
         return;
 
-    MotorDriver[index]->Open();
+    RequestMotorOpen(index);
     PauseAutoControl(index);
     MqttPublishMotor(index);
 }
@@ -237,7 +446,7 @@ void ManualClose(int index)
     if (index < 0 || index >= MOTOR_COUNT)
         return;
 
-    MotorDriver[index]->Close();
+    RequestMotorClose(index);
     PauseAutoControl(index);
     MqttPublishMotor(index);
 }
@@ -251,13 +460,13 @@ void ProcessMotorAutomation(float temp)
 
         if (data.ao[i] && !MotorDriver[i]->IsOpen() && temp > data.o[i])
         {
-            MotorDriver[i]->Open();
+            RequestMotorOpen(i);
             MqttPublishMotor(i);
         }
 
         if (data.ac[i] && MotorDriver[i]->IsOpen() && temp < data.c[i] - TEMP_HYSTERESIS)
         {
-            MotorDriver[i]->Close();
+            RequestMotorClose(i);
             MqttPublishMotor(i);
         }
     }

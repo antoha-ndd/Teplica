@@ -50,3 +50,22 @@ struct Data
 extern Data data;
 extern unsigned long autoRestoreAt[MOTOR_COUNT];
 extern bool autoPaused[MOTOR_COUNT];
+
+enum class MotorAction : uint8_t
+{
+    None,
+    Open,
+    Close,
+    InitClose
+};
+
+struct MotorQueueEntry
+{
+    int8_t index;
+    MotorAction action;
+};
+
+extern MotorQueueEntry motorQueue[MOTOR_COUNT];
+extern int motorQueueCount;
+extern int8_t activeMotorIndex;
+extern MotorAction activeMotorAction;

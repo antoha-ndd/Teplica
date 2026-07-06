@@ -120,6 +120,7 @@ void Timer2_Timeout(TTimer *Timer)
 
     if (bmp->IsOk())
         ProcessMotorAutomation(bmp->Temperature(true));
+    ProcessMotorQueue();
 
     MqttPublishTelemetry();
     MqttPublishAllMotors();
