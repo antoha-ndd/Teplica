@@ -6,6 +6,8 @@
 #include "var.h"
 #include "webui.h"
 #include "settings.h"
+#include "storage.h"
+#include "MotorQueueControl.h"
 #include "MotorDriver.h"
 #include "bmp180.h"
 #include "mqtt.h"
@@ -19,12 +21,15 @@ static int motorIndexFromAutoFlagId(size_t id)
     {
     case uiid::Ao1:
     case uiid::Ac1:
+    case uiid::En1:
         return 0;
     case uiid::Ao2:
     case uiid::Ac2:
+    case uiid::En2:
         return 1;
     case uiid::Ao3:
     case uiid::Ac3:
+    case uiid::En3:
         return 2;
     default:
         return -1;
@@ -34,7 +39,7 @@ static int motorIndexFromAutoFlagId(size_t id)
 static void buildMotorMenu(sets::Builder &b, int index, const char *title,
                            size_t opId, size_t cId, size_t oId,
                            size_t aoId, size_t acId, size_t arId, size_t arLeftId,
-                           size_t openId, size_t closeId)
+                           size_t enId, size_t openId, size_t closeId)
 {
     if (!b.beginMenu(title))
         return;
@@ -47,14 +52,15 @@ static void buildMotorMenu(sets::Builder &b, int index, const char *title,
     b.Switch(acId, "Автозакрытие", &MotorDriver[index]->AutoClose);
     b.Number(arId, "Восст. авто, мин", &data.ar[index], 0, 1440);
     b.Label(arLeftId, "Осталось, мин", GetAutoRestoreStatusText(index));
+    b.Switch(enId, "Мотор включён", &data.motorEnabled[index]);
 
     if (b.beginButtons())
     {
         if (b.Button(openId, "Открыть"))
-            ManualOpen(index);
+            TMotorQueueControl::ManualOpen(index);
 
         if (b.Button(closeId, "Закрыть"))
-            ManualClose(index);
+            TMotorQueueControl::ManualClose(index);
 
         b.endButtons();
     }
@@ -70,15 +76,15 @@ void buildUi(sets::Builder &b)
 
     buildMotorMenu(b, 0, "Окно ближнее",
                    uiid::Op1, uiid::C1, uiid::O1, uiid::Ao1, uiid::Ac1,
-                   uiid::Ar1, uiid::ArLeft1, uiid::Open1, uiid::Close1);
+                   uiid::Ar1, uiid::ArLeft1, uiid::En1, uiid::Open1, uiid::Close1);
 
     buildMotorMenu(b, 1, "Окно дальнее (у бочки)",
                    uiid::Op2, uiid::C2, uiid::O2, uiid::Ao2, uiid::Ac2,
-                   uiid::Ar2, uiid::ArLeft2, uiid::Open2, uiid::Close2);
+                   uiid::Ar2, uiid::ArLeft2, uiid::En2, uiid::Open2, uiid::Close2);
 
     buildMotorMenu(b, 2, "Дверь дальння (на дорогу)",
                    uiid::Op3, uiid::C3, uiid::O3, uiid::Ao3, uiid::Ac3,
-                   uiid::Ar3, uiid::ArLeft3, uiid::Open3, uiid::Close3);
+                   uiid::Ar3, uiid::ArLeft3, uiid::En3, uiid::Open3, uiid::Close3);
 
     if (b.beginMenu("WI-FI"))
     {
@@ -128,6 +134,9 @@ void buildUi(sets::Builder &b)
     case uiid::Ac1:
     case uiid::Ac2:
     case uiid::Ac3:
+    case uiid::En1:
+    case uiid::En2:
+    case uiid::En3:
     {
         int index = motorIndexFromAutoFlagId(b.build.id);
         if (index >= 0)

@@ -4,6 +4,9 @@
 #include "var.h"
 #include "events.h"
 #include "settings.h"
+#include "storage.h"
+#include "MotorQueueControl.h"
+#include "MotorWatchdog.h"
 #include "webui.h"
 #include "AppSettings.h"
 #include "button.h"
@@ -26,8 +29,8 @@ void Init()
 
     LCD = new TSSD1306();
     ArduinoOTA.onProgress(OnOTAProgress);
-    ArduinoOTA.onStart([]() { PauseMotorsForOta(); });
-    ArduinoOTA.onEnd([]() { ResumeMotorsAfterOta(); });
+    ArduinoOTA.onStart([]() { TMotorQueueControl::PauseForOta(); });
+    ArduinoOTA.onEnd([]() { TMotorQueueControl::ResumeAfterOta(); });
 
     LCD->clearDisplay();
     LCD->setCursor(20, 5);
@@ -80,11 +83,17 @@ void Init()
     MotorDriver[1]->Register(App);
     MotorDriver[2]->Register(App);
 
-    InitCloseAllMotors();
+    TMotorQueueControl::InitCloseAll();
 
     LoadSettings();
     InitMqtt();
     InitWebUi();
+
+    TMotorQueueControl *motorQueue = new TMotorQueueControl();
+    motorQueue->Register(App);
+
+    TMotorWatchdog *motorWatchdog = new TMotorWatchdog();
+    motorWatchdog->Register(App);
 
     Timer1->Start(5000);
     Timer2->Start(1000);

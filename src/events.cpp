@@ -5,6 +5,7 @@
 #include "var.h"
 #include "events.h"
 #include "settings.h"
+#include "MotorQueueControl.h"
 #include "mqtt.h"
 #include "bmp180.h"
 #include "button.h"
@@ -26,14 +27,14 @@ static void BtnOpen_Click(int index, TButton *Button)
 {
     (void)Button;
     ShowMotorLabel("Open", index);
-    ManualOpen(index);
+    TMotorQueueControl::ManualOpen(index);
 }
 
 static void BtnClose_Click(int index, TButton *Button)
 {
     (void)Button;
     ShowMotorLabel("Close", index);
-    ManualClose(index);
+    TMotorQueueControl::ManualClose(index);
 }
 
 void OnOTAProgress(unsigned int Progress, unsigned int Total)
@@ -116,11 +117,8 @@ void Timer2_Timeout(TTimer *Timer)
 {
     (void)Timer;
 
-    TickAutoRestore();
-
     if (bmp->IsOk())
         ProcessMotorAutomation(bmp->Temperature(true));
-    ProcessMotorQueue();
 
     MqttPublishTelemetry();
     MqttPublishAllMotors();

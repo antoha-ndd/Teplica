@@ -29,8 +29,3 @@ TMotorDriver *MotorDriver[MOTOR_COUNT];
 Data data;
 unsigned long autoRestoreAt[MOTOR_COUNT]{0};
 bool autoPaused[MOTOR_COUNT]{false};
-
-MotorQueueEntry motorQueue[MOTOR_COUNT]{};
-int motorQueueCount{0};
-int8_t activeMotorIndex{-1};
-MotorAction activeMotorAction{MotorAction::None};

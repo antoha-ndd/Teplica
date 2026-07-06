@@ -15,6 +15,7 @@ class TSSD1306;
 class TButton;
 class TMotorDriver;
 class TMQTTControl;
+class TMotorQueueControl;
 
 unsigned long GetTimerValueImpl();
 extern TTimerValueCallback GetTimerValue;
@@ -45,27 +46,9 @@ struct Data
     bool ac[MOTOR_COUNT];
     bool ao[MOTOR_COUNT];
     uint16_t ar[MOTOR_COUNT];
+    bool motorEnabled[MOTOR_COUNT];
 };
 
 extern Data data;
 extern unsigned long autoRestoreAt[MOTOR_COUNT];
 extern bool autoPaused[MOTOR_COUNT];
-
-enum class MotorAction : uint8_t
-{
-    None,
-    Open,
-    Close,
-    InitClose
-};
-
-struct MotorQueueEntry
-{
-    int8_t index;
-    MotorAction action;
-};
-
-extern MotorQueueEntry motorQueue[MOTOR_COUNT];
-extern int motorQueueCount;
-extern int8_t activeMotorIndex;
-extern MotorAction activeMotorAction;
