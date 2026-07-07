@@ -31,14 +31,18 @@ void TMotorQueueControl::Idle()
                 ClearActiveMotor();
         }
 
-        while (motorQueueCount > 0)
+        // Process queued actions only when no motor is active
+        if (activeMotorIndex < 0)
         {
-            const int index = motorQueue[0].index;
-            const MotorAction action = motorQueue[0].action;
-            PopQueueFront();
+            while (motorQueueCount > 0)
+            {
+                const int index = motorQueue[0].index;
+                const MotorAction action = motorQueue[0].action;
+                PopQueueFront();
 
-            if (ExecuteMotorAction(index, action))
-                break;
+                if (ExecuteMotorAction(index, action))
+                    break;
+            }
         }
     }
 
